@@ -89,3 +89,62 @@ describe('AuthService.validatePhoneLogin', () => {
     expect(result).toMatchObject({ isNewUser: true, user: { id: 8 } });
   });
 });
+
+describe('AuthService.update', () => {
+  const payload = { id: 7, role: { id: 2 }, sessionId: 99, iat: 0, exp: 0 };
+
+  it('should stamp KVKK consent once and pass marketing consent through', async () => {
+    const { service, users } = buildAuthService();
+    users.findById.mockResolvedValue(aUser({ kvkkAcceptedAt: null }));
+
+    await service.update(payload, {
+      firstName: 'Ayşe',
+      kvkkAccepted: true,
+      marketingConsent: true,
+    });
+
+    expect(users.update).toHaveBeenCalledWith(7, {
+      firstName: 'Ayşe',
+      marketingConsent: true,
+      kvkkAcceptedAt: expect.any(Date),
+    });
+  });
+
+  it('should not move an existing KVKK timestamp', async () => {
+    const { service, users } = buildAuthService();
+    users.findById.mockResolvedValue(
+      aUser({ kvkkAcceptedAt: new Date('2026-01-01') }),
+    );
+
+    await service.update(payload, { kvkkAccepted: true });
+
+    expect(users.update).toHaveBeenCalledWith(7, { kvkkAcceptedAt: undefined });
+  });
+});
+
+describe('AuthService.softDelete', () => {
+  it('should free the phone number and email, drop sessions, then soft delete', async () => {
+    const { service, users, sessions } = buildAuthService();
+    const payload = { id: 7, role: { id: 2 }, sessionId: 99, iat: 0, exp: 0 };
+
+    await service.softDelete(payload);
+
+    expect(users.update).toHaveBeenCalledWith(7, {
+      phoneNumber: 'deleted:7',
+      email: null,
+    });
+    expect(sessions.deleteByUserId).toHaveBeenCalledWith({ userId: 7 });
+    expect(users.remove).toHaveBeenCalledWith(7);
+  });
+});
+
+describe('AuthService.me', () => {
+  it('should reject a token whose user no longer exists', async () => {
+    const { service, users } = buildAuthService();
+    users.findById.mockResolvedValue(null);
+
+    await expect(
+      service.me({ id: 7, role: { id: 2 }, sessionId: 99, iat: 0, exp: 0 }),
+    ).rejects.toThrow('Unauthorized');
+  });
+});

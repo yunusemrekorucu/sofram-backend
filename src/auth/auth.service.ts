@@ -407,8 +407,15 @@ export class AuthService {
     await this.usersService.update(user.id, user);
   }
 
-  async me(userJwtPayload: JwtPayloadType): Promise<NullableType<User>> {
-    return this.usersService.findById(userJwtPayload.id);
+  async me(userJwtPayload: JwtPayloadType): Promise<User> {
+    const user = await this.usersService.findById(userJwtPayload.id);
+
+    // Access tokens are stateless; a deleted account must still stop here.
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    return user;
   }
 
   async update(
@@ -500,10 +507,15 @@ export class AuthService {
       });
     }
 
-    delete userDto.email;
-    delete userDto.oldPassword;
+    const { kvkkAccepted, ...changes } = userDto;
+    delete changes.email;
+    delete changes.oldPassword;
 
-    await this.usersService.update(userJwtPayload.id, userDto);
+    await this.usersService.update(userJwtPayload.id, {
+      ...changes,
+      kvkkAcceptedAt:
+        kvkkAccepted && !currentUser.kvkkAcceptedAt ? new Date() : undefined,
+    });
 
     return this.usersService.findById(userJwtPayload.id);
   }
@@ -548,6 +560,13 @@ export class AuthService {
   }
 
   async softDelete(userJwtPayload: JwtPayloadType): Promise<void> {
+    // phoneNumber and email are UNIQUE and soft-deleted rows keep them, so free
+    // both before deleting — otherwise the same person can never sign up again.
+    await this.usersService.update(userJwtPayload.id, {
+      phoneNumber: `deleted:${userJwtPayload.id}`,
+      email: null,
+    });
+    await this.sessionService.deleteByUserId({ userId: userJwtPayload.id });
     await this.usersService.remove(userJwtPayload.id);
   }
 
