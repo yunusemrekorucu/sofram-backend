@@ -15,10 +15,10 @@ Use the `generate` skill (auto-loaded from [.claude/skills/generate/SKILL.md](.c
 - API on `http://localhost:3001`, prefix `/api/v1`, Swagger at `/docs`.
 - Seeded users: `admin@example.com` / `secret` (Admin), `john.doe@example.com` / `secret` (User).
 
-## Known gaps against the mobile client
+## API conventions
 
-The mobile app (`../sofram-mobile/src/store`) was written against a different
-API shape; these are backend work still to do, not bugs in the boilerplate:
-
-- Mobile signs in with **phone + OTP** (`requestOtp` / `verifyOtp`); the boilerplate is email/password-first.
-- Mobile expects every response wrapped as `{ data, status, statusCode, message }`; the boilerplate returns bare bodies.
+- Every response is wrapped by `utils/http/ResponseEnvelopeInterceptor` as `{ data, status, statusCode, message }`; errors go through `utils/http/AllExceptionsFilter` as `{ data: null, status: false, statusCode, message, errors?: { field, message }[] }` (dot paths for nested DTOs). 204 is not wrapped. Keep throwing the boilerplate shape (`new UnprocessableEntityException({ status, errors: { field: 'key' } })`) — the filter flattens it.
+- Records that belong to a user are looked up scoped to that user and wrapped in `orNotFound(...)` (`utils/or-not-found.ts`): someone else's record is a 404, never a 403.
+- Phone login: the client sends a phone-auth `idToken` to `POST /api/v1/auth/phone/login`; `auth-phone/verifier/PhoneTokenVerifier` turns it into an E.164 number. Only `DevPhoneTokenVerifier` exists (accepts `dev:+905551112233`); production refuses to boot until a Firebase verifier is returned from `phone-token-verifier.provider.ts`.
+- `profileCompleted` is derived in `UserMapper.toDomain` (first name + last name + KVKK consent) — never store it.
+- Phase specs and plans: `docs/superpowers/specs/`, `docs/superpowers/plans/`.
