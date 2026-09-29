@@ -10,4 +10,6 @@ export type AuthConfig = {
   confirmEmailSecret?: string;
   confirmEmailExpires?: ms.StringValue;
   uniformErrors: boolean;
+  /** Opt-in only: binds DevPhoneTokenVerifier (`dev:<E.164>`). Never in production. */
+  phoneDevVerifier: boolean;
 };

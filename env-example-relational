@@ -50,6 +50,11 @@ AUTH_FORGOT_TOKEN_EXPIRES_IN=30m
 AUTH_CONFIRM_EMAIL_SECRET=secret_for_confirm_email
 AUTH_CONFIRM_EMAIL_TOKEN_EXPIRES_IN=1d
 AUTH_UNIFORM_ERRORS=false
+# Binds DevPhoneTokenVerifier: POST /auth/phone/login accepts `dev:<E.164>` and
+# logs in as ANY number. Local development and e2e only — NEVER set this in
+# production (the app refuses to boot with it there, and refuses to boot without
+# it until a real phone verifier exists).
+AUTH_PHONE_DEV_VERIFIER=true
 
 FACEBOOK_APP_ID=
 FACEBOOK_APP_SECRET=

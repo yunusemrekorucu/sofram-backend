@@ -61,7 +61,7 @@ Her faz kendi spec → plan → uygulama döngüsünden geçer ve çalışır ha
 | `POST /api/v1/auth/email/login` | `{ email, password }` | yalnızca admin rolü; diğerlerine 403 |
 
 - `PhoneTokenVerifier` arayüzü: `verify(idToken): Promise<{ phoneNumber: string /* E.164 */ }>`.
-  - `DevPhoneTokenVerifier`: `dev:+905551112233` formatını kabul eder. Yalnızca `NODE_ENV !== 'production'` iken provider'a bağlanır; production'da Firebase verifier yoksa uygulama açılışta hata verir.
+  - `DevPhoneTokenVerifier`: `dev:+905551112233` formatını kabul eder. Yalnızca `AUTH_PHONE_DEV_VERIFIER=true` açıkça verildiğinde provider'a bağlanır (NODE_ENV'e bakılarak açılmaz; production'da bayrak açık olsa da bağlanmaz). Bayrak yoksa ve gerçek (Firebase) verifier da yoksa uygulama açılışta hata verir — fail-closed.
   - `FirebasePhoneTokenVerifier`: kullanıcı ekler (`firebase-admin` → `verifyIdToken` → `phone_number`).
 - Numara ilk kez görülürse `provider = 'phone'`, isimsiz bir kullanıcı oluşturulur ve `isNewUser: true` döner.
 - Mevcut session/refresh mekanizması (boilerplate `SessionService`) aynen kullanılır.
@@ -219,3 +219,4 @@ Kod incelendiğinde boilerplate'te hazır olan endpoint'leri yeniden yazmak yeri
 | `@ResponseMessage` decorator'ı, `ApiEnvelopeResponse` Swagger yardımcısı | Yok; Swagger açıklamasında zarf tek cümleyle anlatılır | Faz 1'de kullanan yer yok (YAGNI) |
 | `profileCompleted` sütunu | Sütun yok; mapper'da `firstName && lastName && kvkkAcceptedAt`'ten türetilir | Saklanan türev alan kayar |
 | `allergenPreferences`, `hasKitchen` | Faz 2'ye taşındı | Faz 1'de okuyan/yazan yok |
+| Dev doğrulayıcı `NODE_ENV !== 'production'` ile bağlanır | NODE_ENV guard → açık `AUTH_PHONE_DEV_VERIFIER` opt-in, fail-closed (bayrak yoksa açılışta hata; production'da bayrak açıksa da hata) | `app.nodeEnv` varsayılanı `development`; NODE_ENV'i unutulmuş/staging bir kurulumda `dev:+90…` herkes adına giriş yaptırıyordu |

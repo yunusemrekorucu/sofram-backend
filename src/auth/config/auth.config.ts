@@ -59,6 +59,10 @@ class EnvironmentVariablesValidator {
   @IsBooleanString()
   @IsOptional()
   AUTH_UNIFORM_ERRORS: string;
+
+  @IsBooleanString()
+  @IsOptional()
+  AUTH_PHONE_DEV_VERIFIER: string;
 }
 
 export default registerAs<AuthConfig>('auth', () => {
@@ -76,5 +80,6 @@ export default registerAs<AuthConfig>('auth', () => {
     confirmEmailExpires: process.env
       .AUTH_CONFIRM_EMAIL_TOKEN_EXPIRES_IN as ms.StringValue,
     uniformErrors: process.env.AUTH_UNIFORM_ERRORS === 'true',
+    phoneDevVerifier: process.env.AUTH_PHONE_DEV_VERIFIER === 'true',
   };
 });
