@@ -560,13 +560,8 @@ export class AuthService {
   }
 
   async softDelete(userJwtPayload: JwtPayloadType): Promise<void> {
-    // phoneNumber and email are UNIQUE and soft-deleted rows keep them, so free
-    // both before deleting — otherwise the same person can never sign up again.
-    await this.usersService.update(userJwtPayload.id, {
-      phoneNumber: `deleted:${userJwtPayload.id}`,
-      email: null,
-    });
-    await this.sessionService.deleteByUserId({ userId: userJwtPayload.id });
+    // Anonymization, address and session cleanup live in UsersService.remove,
+    // shared with the admin DELETE /users/:id.
     await this.usersService.remove(userJwtPayload.id);
   }
 

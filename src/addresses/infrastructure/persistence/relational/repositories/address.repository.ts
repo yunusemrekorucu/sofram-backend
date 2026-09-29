@@ -92,4 +92,8 @@ export class AddressRelationalRepository implements AddressRepository {
   async remove(id: Address['id']): Promise<void> {
     await this.addressRepository.delete(id);
   }
+
+  async removeByUserId(userId: User['id']): Promise<void> {
+    await this.addressRepository.delete({ user: { id: Number(userId) } });
+  }
 }

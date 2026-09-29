@@ -66,6 +66,11 @@ class InMemoryAddressRepository extends AddressRepository {
     this.rows = this.rows.filter((r) => r.id !== id);
     return Promise.resolve();
   }
+
+  removeByUserId(userId: User['id']) {
+    this.rows = this.rows.filter((r) => r.ownerId !== userId);
+    return Promise.resolve();
+  }
 }
 
 const dto = (title: string, extra: Partial<CreateAddressDto> = {}) =>
@@ -141,5 +146,16 @@ describe('AddressesService', () => {
       NotFoundException,
     );
     expect(await service.findAllForUser(ME)).toEqual([]);
+  });
+
+  it("should delete every address of a user and nobody else's", async () => {
+    await service.create(ME, dto('Ev'));
+    await service.create(ME, dto('İş'));
+    const theirs = await service.create(SOMEONE_ELSE, dto('Ev'));
+
+    await service.removeAllForUser(ME);
+
+    expect(await service.findAllForUser(ME)).toEqual([]);
+    expect(await service.findAllForUser(SOMEONE_ELSE)).toEqual([theirs]);
   });
 });

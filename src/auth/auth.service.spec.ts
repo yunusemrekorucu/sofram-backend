@@ -123,18 +123,15 @@ describe('AuthService.update', () => {
 });
 
 describe('AuthService.softDelete', () => {
-  it('should free the phone number and email, drop sessions, then soft delete', async () => {
+  it('should hand the whole deletion to UsersService.remove', async () => {
     const { service, users, sessions } = buildAuthService();
     const payload = { id: 7, role: { id: 2 }, sessionId: 99, iat: 0, exp: 0 };
 
     await service.softDelete(payload);
 
-    expect(users.update).toHaveBeenCalledWith(7, {
-      phoneNumber: 'deleted:7',
-      email: null,
-    });
-    expect(sessions.deleteByUserId).toHaveBeenCalledWith({ userId: 7 });
     expect(users.remove).toHaveBeenCalledWith(7);
+    expect(users.update).not.toHaveBeenCalled();
+    expect(sessions.deleteByUserId).not.toHaveBeenCalled();
   });
 });
 

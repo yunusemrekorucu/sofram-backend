@@ -39,5 +39,10 @@ export abstract class UserRepository {
     payload: DeepPartial<User>,
   ): Promise<User | null>;
 
-  abstract remove(id: User['id']): Promise<void>;
+  /**
+   * Account deletion in a single UPDATE: frees the UNIQUE phone number and
+   * email, clears personal data (KVKK) and sets deletedAt. A no-op for an
+   * unknown or already deleted user.
+   */
+  abstract anonymizeAndSoftDelete(id: User['id']): Promise<void>;
 }

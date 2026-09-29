@@ -11,9 +11,15 @@ export class User {
     type: () => Boolean,
     nullable: false,
   })
+  @Expose({ groups: ['me', 'admin'] })
   marketingConsent?: boolean;
 
-  @Exclude({ toPlainOnly: true })
+  /** Proof of consent — admins only; users see it as `profileCompleted`. */
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+  })
+  @Expose({ groups: ['admin'] })
   kvkkAcceptedAt?: Date | null;
 
   @ApiProperty({

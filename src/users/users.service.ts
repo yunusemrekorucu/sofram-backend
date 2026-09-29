@@ -18,12 +18,16 @@ import { FileType } from '../files/domain/file';
 import { Role } from '../roles/domain/role';
 import { Status } from '../statuses/domain/status';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AddressesService } from '../addresses/addresses.service';
+import { SessionService } from '../session/session.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly usersRepository: UserRepository,
     private readonly filesService: FilesService,
+    private readonly addressesService: AddressesService,
+    private readonly sessionService: SessionService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -52,6 +56,10 @@ export class UsersService {
         });
       }
       email = createUserDto.email;
+    }
+
+    if (createUserDto.phoneNumber) {
+      await this.assertPhoneNumberFree(createUserDto.phoneNumber);
     }
 
     let photo: FileType | null | undefined = undefined;
@@ -220,6 +228,10 @@ export class UsersService {
       email = null;
     }
 
+    if (updateUserDto.phoneNumber) {
+      await this.assertPhoneNumberFree(updateUserDto.phoneNumber, id);
+    }
+
     let photo: FileType | null | undefined = undefined;
 
     if (updateUserDto.photo?.id) {
@@ -300,7 +312,32 @@ export class UsersService {
     });
   }
 
+  /**
+   * The only account-deletion path (DELETE /auth/me and admin
+   * DELETE /users/:id): anonymize + soft delete the user in one UPDATE, then
+   * hard-delete their addresses (GPS) and end every session, which also
+   * revokes outstanding access tokens (see JwtStrategy).
+   */
   async remove(id: User['id']): Promise<void> {
-    await this.usersRepository.remove(id);
+    await this.usersRepository.anonymizeAndSoftDelete(id);
+    await this.addressesService.removeAllForUser(id);
+    await this.sessionService.deleteByUserId({ userId: id });
+  }
+
+  private async assertPhoneNumberFree(
+    phoneNumber: NonNullable<User['phoneNumber']>,
+    ownerId?: User['id'],
+  ): Promise<void> {
+    const holder = await this.usersRepository.findByPhoneNumber(phoneNumber);
+
+    // Route params are strings, entity ids are numbers.
+    if (holder && String(holder.id) !== String(ownerId)) {
+      throw new UnprocessableEntityException({
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        errors: {
+          phoneNumber: 'phoneAlreadyExists',
+        },
+      });
+    }
   }
 }

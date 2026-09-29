@@ -63,6 +63,11 @@ export class AddressesService {
     }
   }
 
+  /** Account deletion (KVKK): addresses carry GPS, so they are hard-deleted. */
+  removeAllForUser(userId: User['id']): Promise<void> {
+    return this.addressRepository.removeByUserId(userId);
+  }
+
   private findOwned(userId: User['id'], id: Address['id']): Promise<Address> {
     return orNotFound(this.addressRepository.findOwned(userId, id));
   }

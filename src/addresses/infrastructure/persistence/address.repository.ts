@@ -27,4 +27,7 @@ export abstract class AddressRepository {
   abstract setDefault(userId: User['id'], id: Address['id']): Promise<void>;
 
   abstract remove(id: Address['id']): Promise<void>;
+
+  /** Hard-deletes every address of the user (account deletion). */
+  abstract removeByUserId(userId: User['id']): Promise<void>;
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { FindOptionsWhere, Repository, In } from 'typeorm';
+import { FindOptionsWhere, Repository, In, IsNull } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { FilterUserDto, SortUserDto } from '../../../../dto/query-user.dto';
@@ -130,7 +130,20 @@ export class UsersRelationalRepository implements UserRepository {
     return UserMapper.toDomain(updatedEntity);
   }
 
-  async remove(id: User['id']): Promise<void> {
-    await this.usersRepository.softDelete(id);
+  async anonymizeAndSoftDelete(id: User['id']): Promise<void> {
+    await this.usersRepository.update(
+      { id: Number(id), deletedAt: IsNull() },
+      {
+        // Soft-deleted rows keep their UNIQUE values; the placeholder frees the
+        // real number so the same person can sign up again.
+        phoneNumber: `deleted:${id}`,
+        email: null,
+        firstName: null,
+        lastName: null,
+        socialId: null,
+        photo: null,
+        deletedAt: new Date(),
+      },
+    );
   }
 }
