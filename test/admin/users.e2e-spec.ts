@@ -88,6 +88,29 @@ describe('Users Module', () => {
           .expect(422);
       });
 
+      it('should fail to create new user with non-E.164 phone number: /api/v1/users (POST)', () => {
+        return request(app)
+          .post(`/api/v1/users`)
+          .auth(apiToken, {
+            type: 'bearer',
+          })
+          .send({
+            email: `user-invalid-phone.${Date.now()}@example.com`,
+            password: 'secret',
+            firstName: `InvalidPhone${Date.now()}`,
+            lastName: 'E2E',
+            phoneNumber: '05551112233',
+          })
+          .expect(422)
+          .expect(({ body }) => {
+            expect(body.errors).toEqual(
+              expect.arrayContaining([
+                expect.objectContaining({ field: 'phoneNumber' }),
+              ]),
+            );
+          });
+      });
+
       it('should successfully create new user: /api/v1/users (POST)', () => {
         return request(app)
           .post(`/api/v1/users`)

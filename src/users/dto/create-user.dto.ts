@@ -12,6 +12,7 @@ import {
   MinLength,
   IsString,
   IsBoolean,
+  Matches,
 } from 'class-validator';
 import { FileDto } from '../../files/dto/file.dto';
 import { RoleDto } from '../../roles/dto/role.dto';
@@ -35,6 +36,7 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsString()
+  @Matches(/^\+[1-9]\d{7,14}$/, { message: 'invalidPhoneNumber' })
   phoneNumber?: string | null;
 
   @ApiProperty({ example: 'test1@example.com', type: String })
