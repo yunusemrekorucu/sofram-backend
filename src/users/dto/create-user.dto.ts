@@ -10,6 +10,8 @@ import {
   IsNotEmpty,
   IsOptional,
   MinLength,
+  IsString,
+  IsBoolean,
 } from 'class-validator';
 import { FileDto } from '../../files/dto/file.dto';
 import { RoleDto } from '../../roles/dto/role.dto';
@@ -17,6 +19,24 @@ import { StatusDto } from '../../statuses/dto/status.dto';
 import { lowerCaseTransformer } from '../../utils/transformers/lower-case.transformer';
 
 export class CreateUserDto {
+  @ApiProperty({
+    required: false,
+    type: () => Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  marketingConsent?: boolean;
+
+  kvkkAcceptedAt?: Date | null;
+
+  @ApiProperty({
+    required: false,
+    type: () => String,
+  })
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string | null;
+
   @ApiProperty({ example: 'test1@example.com', type: String })
   @Transform(lowerCaseTransformer)
   @IsNotEmpty()

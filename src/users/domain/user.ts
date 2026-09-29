@@ -8,6 +8,22 @@ const idType = Number;
 
 export class User {
   @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+  })
+  marketingConsent?: boolean;
+
+  @Exclude({ toPlainOnly: true })
+  kvkkAcceptedAt?: Date | null;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+  })
+  @Expose({ groups: ['me', 'admin'] })
+  phoneNumber?: string | null;
+
+  @ApiProperty({
     type: idType,
   })
   id: number | string;
@@ -47,6 +63,10 @@ export class User {
     example: 'Doe',
   })
   lastName: string | null;
+
+  /** Derived in UserMapper.toDomain — never persisted. */
+  @ApiProperty({ type: Boolean })
+  profileCompleted?: boolean;
 
   @ApiProperty({
     type: () => FileType,

@@ -21,6 +21,15 @@ import { EntityRelationalHelper } from '../../../../../utils/relational-entity-h
   name: 'user',
 })
 export class UserEntity extends EntityRelationalHelper {
+  @Column({ type: Boolean, default: false })
+  marketingConsent?: boolean;
+
+  @Column({ type: Date, nullable: true })
+  kvkkAcceptedAt?: Date | null;
+
+  @Column({ type: String, nullable: true, unique: true })
+  phoneNumber?: string | null;
+
   @PrimaryGeneratedColumn()
   id: number;
 

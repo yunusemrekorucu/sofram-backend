@@ -1,4 +1,5 @@
 import { FileEntity } from '../../../../../files/infrastructure/persistence/relational/entities/file.entity';
+
 import { FileMapper } from '../../../../../files/infrastructure/persistence/relational/mappers/file.mapper';
 import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
@@ -8,6 +9,12 @@ import { UserEntity } from '../entities/user.entity';
 export class UserMapper {
   static toDomain(raw: UserEntity): User {
     const domainEntity = new User();
+    domainEntity.marketingConsent = raw.marketingConsent;
+
+    domainEntity.kvkkAcceptedAt = raw.kvkkAcceptedAt;
+
+    domainEntity.phoneNumber = raw.phoneNumber;
+
     domainEntity.id = raw.id;
     domainEntity.email = raw.email;
     domainEntity.password = raw.password;
@@ -23,6 +30,9 @@ export class UserMapper {
     domainEntity.createdAt = raw.createdAt;
     domainEntity.updatedAt = raw.updatedAt;
     domainEntity.deletedAt = raw.deletedAt;
+    domainEntity.profileCompleted = Boolean(
+      raw.firstName && raw.lastName && raw.kvkkAcceptedAt,
+    );
     return domainEntity;
   }
 
@@ -52,6 +62,12 @@ export class UserMapper {
     }
 
     const persistenceEntity = new UserEntity();
+    persistenceEntity.marketingConsent = domainEntity.marketingConsent;
+
+    persistenceEntity.kvkkAcceptedAt = domainEntity.kvkkAcceptedAt;
+
+    persistenceEntity.phoneNumber = domainEntity.phoneNumber;
+
     if (domainEntity.id && typeof domainEntity.id === 'number') {
       persistenceEntity.id = domainEntity.id;
     }
