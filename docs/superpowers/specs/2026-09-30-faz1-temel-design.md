@@ -204,3 +204,18 @@ Temiz kurulumda, lokal backend'e karşı:
 ## 7. Kapsam dışı
 
 Gerçek Firebase bağlantısı (kullanıcı ekler), push bildirim (Faz 6), mutfak açma ve aşçı ekranlarının içeriği (Faz 2), davet et/kazan, alerjen tercih ekranı (Faz 2 — alan Faz 1'de saklanır).
+
+## 8. Uygulama notları (plan yazılırken yapılan düzeltmeler — yukarıdaki bölümleri geçersiz kılar)
+
+Kod incelendiğinde boilerplate'te hazır olan endpoint'leri yeniden yazmak yerine genişletmek daha az kod ve daha az tekrar demek; bu yüzden:
+
+| Spec'teki | Uygulanan | Neden |
+|---|---|---|
+| `POST auth/phone` | `POST /api/v1/auth/phone/login` | Mevcut `auth/google/login`, `auth/apple/login` ile aynı şekil |
+| `POST auth/social` | Mevcut `auth/google/login` ve `auth/apple/login` aynen kalır | Zaten var; mobil `provider`'a göre URL seçer |
+| `GET/PATCH/DELETE /me` | Mevcut `GET/PATCH/DELETE /api/v1/auth/me` genişletilir | Zaten var |
+| `/me/addresses` | `/api/v1/addresses` — her rota yalnızca giriş yapmış kullanıcının adreslerine erişir | Generator'ın ürettiği yol; kapsam JWT'den gelir |
+| Email login yalnızca admin (diğerlerine 403) | Email endpoint'leri olduğu gibi kalır, mobilde görünmez | 403 kuralı mevcut e2e paketini yeniden yazdırır, güvenlik kazancı yok (email hesabı da sıradan kullanıcıdır) |
+| `@ResponseMessage` decorator'ı, `ApiEnvelopeResponse` Swagger yardımcısı | Yok; Swagger açıklamasında zarf tek cümleyle anlatılır | Faz 1'de kullanan yer yok (YAGNI) |
+| `profileCompleted` sütunu | Sütun yok; mapper'da `firstName && lastName && kvkkAcceptedAt`'ten türetilir | Saklanan türev alan kayar |
+| `allergenPreferences`, `hasKitchen` | Faz 2'ye taşındı | Faz 1'de okuyan/yazan yok |
