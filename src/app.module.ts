@@ -14,6 +14,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthAppleModule } from './auth-apple/auth-apple.module';
 import { AuthGoogleModule } from './auth-google/auth-google.module';
+import { AuthPhoneModule } from './auth-phone/auth-phone.module';
 import { HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
 import { MailModule } from './mail/mail.module';
@@ -74,6 +75,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     AuthModule,
     AuthGoogleModule,
     AuthAppleModule,
+    AuthPhoneModule,
     SessionModule,
     MailModule,
     MailerModule,

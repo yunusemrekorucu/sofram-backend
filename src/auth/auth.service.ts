@@ -17,6 +17,7 @@ import { SocialInterface } from '../social/interfaces/social.interface';
 import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { NullableType } from '../utils/types/nullable.type';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { PhoneLoginResponseDto } from './dto/phone-login-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
 import { JwtPayloadType } from './strategies/types/jwt-payload.type';
@@ -71,29 +72,7 @@ export class AuthService {
       });
     }
 
-    const hash = crypto
-      .createHash('sha256')
-      .update(randomStringGenerator())
-      .digest('hex');
-
-    const session = await this.sessionService.create({
-      user,
-      hash,
-    });
-
-    const { token, refreshToken, tokenExpires } = await this.getTokensData({
-      id: user.id,
-      role: user.role,
-      sessionId: session.id,
-      hash,
-    });
-
-    return {
-      refreshToken,
-      token,
-      tokenExpires,
-      user,
-    };
+    return this.createLoginResponse(user);
   }
 
   async validateSocialLogin(
@@ -168,32 +147,41 @@ export class AuthService {
       });
     }
 
-    const hash = crypto
-      .createHash('sha256')
-      .update(randomStringGenerator())
-      .digest('hex');
+    return this.createLoginResponse(user);
+  }
 
-    const session = await this.sessionService.create({
-      user,
-      hash,
-    });
+  async validatePhoneLogin(
+    phoneNumber: string,
+  ): Promise<PhoneLoginResponseDto> {
+    const existing = await this.usersService.findByPhoneNumber(phoneNumber);
+    let user = existing;
 
-    const {
-      token: jwtToken,
-      refreshToken,
-      tokenExpires,
-    } = await this.getTokensData({
-      id: user.id,
-      role: user.role,
-      sessionId: session.id,
-      hash,
-    });
+    if (!user) {
+      const created = await this.usersService.create({
+        phoneNumber,
+        email: null,
+        firstName: null,
+        lastName: null,
+        provider: AuthProvidersEnum.phone,
+        role: { id: RoleEnum.user },
+        status: { id: StatusEnum.active },
+      });
+      // Re-read so role/status/photo come back eagerly loaded, as in social login.
+      user = await this.usersService.findById(created.id);
+    }
+
+    if (!user) {
+      throw new UnprocessableEntityException({
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        errors: {
+          user: 'userNotFound',
+        },
+      });
+    }
 
     return {
-      refreshToken,
-      token: jwtToken,
-      tokenExpires,
-      user,
+      ...(await this.createLoginResponse(user)),
+      isNewUser: !existing,
     };
   }
 
@@ -594,6 +582,24 @@ export class AuthService {
     });
 
     return `${forgotSecret}${user.password ?? ''}`;
+  }
+
+  private async createLoginResponse(user: User): Promise<LoginResponseDto> {
+    const hash = crypto
+      .createHash('sha256')
+      .update(randomStringGenerator())
+      .digest('hex');
+
+    const session = await this.sessionService.create({ user, hash });
+
+    const { token, refreshToken, tokenExpires } = await this.getTokensData({
+      id: user.id,
+      role: user.role,
+      sessionId: session.id,
+      hash,
+    });
+
+    return { refreshToken, token, tokenExpires, user };
   }
 
   private async getTokensData(data: {
