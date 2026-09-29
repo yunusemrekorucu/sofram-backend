@@ -12,9 +12,9 @@ describe('Auth', () => {
         .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
         .expect(200)
         .expect(({ body }) => {
-          expect(body.token).toBeDefined();
-          expect(body.user.email).toBeDefined();
-          expect(body.user.role).toBeDefined();
+          expect(body.data.token).toBeDefined();
+          expect(body.data.user.email).toBeDefined();
+          expect(body.data.user.role).toBeDefined();
         });
     });
   });

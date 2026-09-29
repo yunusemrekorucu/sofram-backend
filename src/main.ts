@@ -13,6 +13,8 @@ import { AppModule } from './app.module';
 import validationOptions from './utils/validation-options';
 import { AllConfigType } from './config/config.type';
 import { ResolvePromisesInterceptor } from './utils/serializer.interceptor';
+import { AllExceptionsFilter } from './utils/http/all-exceptions.filter';
+import { ResponseEnvelopeInterceptor } from './utils/http/response-envelope.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -44,7 +46,10 @@ async function bootstrap() {
     type: VersioningType.URI,
   });
   app.useGlobalPipes(new ValidationPipe(validationOptions));
+  app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(
+    // Outermost: wraps the body after it has been serialized below.
+    new ResponseEnvelopeInterceptor(),
     // ResolvePromisesInterceptor is used to resolve promises in responses because class-transformer can't do it
     // https://github.com/typestack/class-transformer/issues/549
     new ResolvePromisesInterceptor(),
@@ -52,8 +57,10 @@ async function bootstrap() {
   );
 
   const options = new DocumentBuilder()
-    .setTitle('API')
-    .setDescription('API docs')
+    .setTitle('Sofram API')
+    .setDescription(
+      'Her yanıt { data, status, statusCode, message } zarfıyla döner; hatalarda status=false ve doğrulama hatalarında errors: { field, message }[] eklenir. Aşağıdaki şemalar `data` içeriğini gösterir.',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .addGlobalParameters({

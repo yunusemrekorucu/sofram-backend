@@ -13,7 +13,7 @@ describe('Users Module', () => {
       .post('/api/v1/auth/email/login')
       .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
       .then(({ body }) => {
-        apiToken = body.token;
+        apiToken = body.data.token;
       });
   });
 
@@ -38,7 +38,7 @@ describe('Users Module', () => {
         .post('/api/v1/auth/email/login')
         .send({ email: newUserEmail, password: newUserPassword })
         .then(({ body }) => {
-          newUser = body.user;
+          newUser = body.data.user;
         });
     });
 
@@ -66,7 +66,7 @@ describe('Users Module', () => {
             })
             .expect(200)
             .expect(({ body }) => {
-              expect(body.token).toBeDefined();
+              expect(body.data.token).toBeDefined();
             });
         });
       });
@@ -119,7 +119,7 @@ describe('Users Module', () => {
             })
             .expect(200)
             .expect(({ body }) => {
-              expect(body.token).toBeDefined();
+              expect(body.data.token).toBeDefined();
             });
         });
       });
@@ -137,10 +137,10 @@ describe('Users Module', () => {
           .expect(200)
           .send()
           .expect(({ body }) => {
-            expect(body.data[0].provider).toBeDefined();
-            expect(body.data[0].email).toBeDefined();
-            expect(body.data[0].hash).not.toBeDefined();
-            expect(body.data[0].password).not.toBeDefined();
+            expect(body.data.data[0].provider).toBeDefined();
+            expect(body.data.data[0].email).toBeDefined();
+            expect(body.data.data[0].hash).not.toBeDefined();
+            expect(body.data.data[0].password).not.toBeDefined();
           });
       });
     });
