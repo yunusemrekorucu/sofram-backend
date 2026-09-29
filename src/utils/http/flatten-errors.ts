@@ -9,10 +9,12 @@ export function flattenErrors(tree: ErrorTree, prefix = ''): ApiFieldError[] {
   for (const [key, value] of Object.entries(tree)) {
     const field = prefix ? `${prefix}.${key}` : key;
 
-    if (typeof value === 'string') {
-      result.push({ field, message: value });
-    } else {
+    // Thrown error bodies are untyped at runtime: only recurse into real
+    // objects and stringify any other leaf (null, numbers, booleans).
+    if (value !== null && typeof value === 'object') {
       result.push(...flattenErrors(value, field));
+    } else {
+      result.push({ field, message: String(value) });
     }
   }
 
