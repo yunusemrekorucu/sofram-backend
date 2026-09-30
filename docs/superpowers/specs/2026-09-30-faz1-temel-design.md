@@ -220,3 +220,7 @@ Kod incelendiğinde boilerplate'te hazır olan endpoint'leri yeniden yazmak yeri
 | `profileCompleted` sütunu | Sütun yok; mapper'da `firstName && lastName && kvkkAcceptedAt`'ten türetilir | Saklanan türev alan kayar |
 | `allergenPreferences`, `hasKitchen` | Faz 2'ye taşındı | Faz 1'de okuyan/yazan yok |
 | Dev doğrulayıcı `NODE_ENV !== 'production'` ile bağlanır | NODE_ENV guard → açık `AUTH_PHONE_DEV_VERIFIER` opt-in, fail-closed (bayrak yoksa açılışta hata; production'da bayrak açıksa da hata) | `app.nodeEnv` varsayılanı `development`; NODE_ENV'i unutulmuş/staging bir kurulumda `dev:+90…` herkes adına giriş yaptırıyordu |
+| `(cook)` grup iskeleti + `mode` slice Faz 1'de | Faz 2'ye | `hasKitchen` Faz 2'de geliyor; Faz 1'de iskelete ulaşan yol yok (ölü kod) |
+| Adres listesinde sola kaydırıp silme | Silme, adres düzenleme ekranında (onaylı) | Tek dokunuşla erişilebilir, ek gesture kodu yok |
+| `onboardingSeen/intentChosen/locationResolved` | `app` slice'ında; `intentChosen` profili tamamlanmış kullanıcı giriş yapınca otomatik true | Geri dönen kullanıcıya rol sorusu sorulmaz |
+| — | `ui/GradientButton` eklendi; Welcome/CookIntro/Login'deki kopya gradient CTA'lar ona taşındı | Kod tekrarı |
