@@ -224,3 +224,7 @@ Kod incelendiğinde boilerplate'te hazır olan endpoint'leri yeniden yazmak yeri
 | Adres listesinde sola kaydırıp silme | Silme, adres düzenleme ekranında (onaylı) | Tek dokunuşla erişilebilir, ek gesture kodu yok |
 | `onboardingSeen/intentChosen/locationResolved` | `app` slice'ında; `intentChosen` profili tamamlanmış kullanıcı giriş yapınca otomatik true | Geri dönen kullanıcıya rol sorusu sorulmaz |
 | — | `ui/GradientButton` eklendi; Welcome/CookIntro/Login'deki kopya gradient CTA'lar ona taşındı | Kod tekrarı |
+| Hesap silinince Welcome (§3.4) | Giriş ekranı | Welcome kurulum başına bir kez gösterilir; silinen hesabın cihazı zaten tanıtımı görmüştür |
+| `locationResolved`: izin verildi veya adres var (§3.1) | En az bir kayıtlı adres gerekir | Keşfet ve teslimat bir adres olmadan çalışamaz; izin yalnızca formu önceden doldurur |
+| Profil'de "Ayarlar'da izin ver" bağlantısı (§4) | Faz 2'ye | Faz 1'de konum yalnızca adres formunu dolduruyor; izin reddinde manuel form var |
+| Ağ yokken mutasyon hatası toast (§4) | Alert / satır altı hata | Kullanıcının karar vermesi gereken hata bir Alert'tir (proje kuralı); çevrimdışı bandı sürekli görünür |
