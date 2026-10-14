@@ -26,8 +26,8 @@ describe('boundingBox', () => {
     const east = { latitude: 40.99, longitude: box.maxLng };
     const north = { latitude: box.maxLat, longitude: 29.02 };
 
-    expect(haversineKm(center, east)).toBeGreaterThanOrEqual(4.99);
-    expect(haversineKm(center, north)).toBeGreaterThanOrEqual(4.99);
+    expect(haversineKm(center, east)).toBeGreaterThanOrEqual(5 - 1e-6);
+    expect(haversineKm(center, north)).toBeGreaterThanOrEqual(5 - 1e-6);
     expect(box.minLat).toBeLessThan(center.latitude);
     expect(box.minLng).toBeLessThan(center.longitude);
   });

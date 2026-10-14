@@ -1,7 +1,7 @@
 export type LatLng = { latitude: number; longitude: number };
 
 const EARTH_RADIUS_KM = 6371;
-const KM_PER_DEGREE = 111.32;
+const KM_PER_DEGREE = (Math.PI / 180) * EARTH_RADIUS_KM;
 
 const radians = (degrees: number) => (degrees * Math.PI) / 180;
 
