@@ -39,9 +39,11 @@ import { CategoriesModule } from './categories/categories.module';
 import { KitchensModule } from './kitchens/kitchens.module';
 
 import { ProductsModule } from './products/products.module';
+import { DiscoveryModule } from './discovery/discovery.module';
 
 @Module({
   imports: [
+    DiscoveryModule,
     ProductsModule,
     KitchensModule,
     CategoriesModule,

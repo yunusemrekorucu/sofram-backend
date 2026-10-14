@@ -32,7 +32,6 @@ const uploadPng = async (token: string): Promise<string> => {
 const HOME = { latitude: 37 + Math.random(), longitude: 30 + Math.random() };
 
 /** Discovery query params `km` kilometres north of HOME. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the Task 6 discovery specs
 const north = (km: number) => ({
   lat: HOME.latitude + km / 111.19,
   lng: HOME.longitude,
@@ -201,7 +200,6 @@ describe('Catalog: kitchens, products and discovery', () => {
       .expect(404));
 
   let categoryId: string;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the Task 6 discovery specs
   let soupId: string;
   let mantiId: string;
   let kofteId: string;
@@ -373,5 +371,210 @@ describe('Catalog: kitchens, products and discovery', () => {
       .send({ priceKurus: 1 })
       .expect(404));
 
-  // TASK-6-DISCOVERY
+  const discover = (
+    path: string,
+    token: string,
+    query: Record<string, unknown>,
+  ) =>
+    request(app)
+      .get(`/api/v1/discover/${path}`)
+      .auth(token, { type: 'bearer' })
+      .query(query);
+
+  const ids = (body: { data: { data: { id: string }[] } }) =>
+    body.data.data.map((item) => item.id);
+
+  type Card = { id: string } & Record<string, unknown>;
+  const find = (body: { data: { data: Card[] } }, id: string) =>
+    body.data.data.find((item) => item.id === id);
+
+  it('should list nearby products with their kitchen', () =>
+    discover('products', customer, north(0))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).toEqual(expect.arrayContaining([mantiId, kofteId]));
+        expect(find(body, mantiId)).toMatchObject({
+          priceKurus: 14000,
+          photo: { id: expect.any(String) },
+          allergenWarnings: [],
+          kitchen: { id: kitchenId, distanceKm: 0 },
+        });
+        expect(find(body, mantiId)).not.toHaveProperty('searchText');
+      }));
+
+  it('should hide kitchens beyond both delivery and pickup range', () =>
+    discover('products', customer, north(30))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).not.toContain(mantiId);
+      }));
+
+  it('should price delivery by tier and round the coordinates', () =>
+    discover('kitchens', customer, north(3))
+      .expect(200)
+      .expect(({ body }) => {
+        const kitchen = find(body, kitchenId);
+        expect(kitchen).toMatchObject({
+          deliveryAvailable: true,
+          deliveryFeeKurus: 2500,
+          pickupAvailable: true,
+          latitude: Number(HOME.latitude.toFixed(3)),
+        });
+        expect(kitchen?.distanceKm).toBeCloseTo(3, 0);
+        expect(kitchen).not.toHaveProperty('fullAddress');
+      }));
+
+  it('should search with folded Turkish text', async () => {
+    await discover('products', customer, { ...north(0), q: 'manti' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).toContain(mantiId);
+        expect(ids(body)).not.toContain(kofteId);
+      });
+
+    await discover('products', customer, { ...north(0), q: 'KÖFTE' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).toContain(kofteId);
+      });
+
+    await discover('kitchens', customer, { ...north(0), q: 'köfte' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).toContain(kitchenId);
+      });
+  });
+
+  it('should filter by diet and category', async () => {
+    await discover('products', customer, { ...north(0), diet: 'vegetarian' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).toContain(kofteId);
+        expect(ids(body)).not.toContain(mantiId);
+      });
+
+    await discover('kitchens', customer, { ...north(0), categoryId: soupId })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).not.toContain(kitchenId);
+      });
+  });
+
+  it('should honour allergen preferences', async () => {
+    await request(app)
+      .patch('/api/v1/auth/me')
+      .auth(customer, { type: 'bearer' })
+      .send({ allergenPreferences: ['milk'] })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data.allergenPreferences).toEqual(['milk']);
+      });
+
+    await discover('products', customer, { ...north(0), allergenSafe: true })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).not.toContain(mantiId);
+        expect(ids(body)).toContain(kofteId);
+      });
+
+    await discover('products', customer, north(0))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(find(body, mantiId)?.allergenWarnings).toEqual(['milk']);
+      });
+  });
+
+  it('should reject an unknown allergen preference', () =>
+    request(app)
+      .patch('/api/v1/auth/me')
+      .auth(customer, { type: 'bearer' })
+      .send({ allergenPreferences: ['peanut'] })
+      .expect(422));
+
+  it('should show the kitchen menu grouped by category', () =>
+    discover(`kitchens/${kitchenId}`, customer, north(0))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data).toMatchObject({
+          id: kitchenId,
+          description: 'Ev yemekleri',
+          hours: ALL_WEEK,
+        });
+        expect(body.data.sections).toHaveLength(1);
+        expect(body.data.sections[0].category.id).toBe(categoryId);
+        expect(
+          body.data.sections[0].products.map((p: { id: string }) => p.id),
+        ).toEqual([mantiId, kofteId]);
+      }));
+
+  it('should show product detail with every photo', () =>
+    discover(`products/${mantiId}`, customer, north(0))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data.photos).toHaveLength(2);
+        expect(body.data).toMatchObject({
+          description: 'Yoğurtlu',
+          kitchen: { id: kitchenId, deliveryFeeKurus: 0 },
+        });
+      }));
+
+  it('should drop sold-out daily portions', async () => {
+    await request(app)
+      .patch(`/api/v1/kitchens/me/products/${kofteId}`)
+      .auth(cook, { type: 'bearer' })
+      .send({ portionsAvailable: 0 })
+      .expect(200);
+
+    await discover('products', customer, north(0))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).not.toContain(kofteId);
+      });
+
+    await discover(`products/${kofteId}`, customer, north(0)).expect(404);
+  });
+
+  it('should keep a paused kitchen listed but closed', async () => {
+    await request(app)
+      .patch('/api/v1/kitchens/me')
+      .auth(cook, { type: 'bearer' })
+      .send({ isPaused: true })
+      .expect(200);
+
+    await discover('kitchens', customer, north(0))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(find(body, kitchenId)).toMatchObject({
+          isPaused: true,
+          isOpenNow: false,
+          opensAt: null,
+        });
+      });
+
+    await request(app)
+      .patch('/api/v1/kitchens/me')
+      .auth(cook, { type: 'bearer' })
+      .send({ isPaused: false })
+      .expect(200);
+  });
+
+  it('should open a far-away kitchen only for its owner', async () => {
+    await discover(`kitchens/${kitchenId}`, customer, north(30)).expect(404);
+    await discover(`kitchens/${kitchenId}`, cook, north(30)).expect(200);
+  });
+
+  it('should take the menu down when the cook deletes the account', async () => {
+    await request(app)
+      .delete('/api/v1/auth/me')
+      .auth(cook, { type: 'bearer' })
+      .expect(204);
+
+    await discover('products', customer, north(0))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).not.toContain(mantiId);
+      });
+
+    await discover(`kitchens/${kitchenId}`, customer, north(0)).expect(404);
+  });
 });
