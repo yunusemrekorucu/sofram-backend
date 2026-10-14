@@ -222,3 +222,19 @@ Lokal backend'e karşı, temiz kurulumda simülatörde:
 ## 7. Kapsam dışı
 
 Sepet, sipariş, porsiyon düşme, ücretsiz teslimat eşiğinin uygulanması (Faz 3); değerlendirme/puan, favoriler (Faz 4); aşçı doğrulama ve "Doğrulanmış" rozetinin verilmesi (Faz 5); aşçıya özel menü bölümleri; gece yarısını aşan çalışma saatleri; yazım hatası toleranslı arama (`pg_trgm`); mutfak kapatma/silme (hesap silme dışında); admin panel (kategoriler Swagger'dan).
+
+## 8. Uygulama notları (plan yazılırken yapılan düzeltmeler — yukarıdaki bölümleri geçersiz kılar)
+
+| Spec'teki | Uygulanan | Neden |
+|---|---|---|
+| `kitchen_delivery_tier`, `kitchen_hours` tabloları | `kitchen.deliveryTiers` ve `kitchen.hours` **jsonb** sütunları + türetilmiş `kitchen.deliveryRadiusKm` (son kademenin `upToKm`'i; teslimat kapalıysa null) | Her zaman mutfakla birlikte okunup bütünüyle değiştirilen küçük listeler; iki entity/modül ve join gereksiz. Keşif SQL'i yarıçapı sütundan, açık/kapalıyı `jsonb_array_elements` ile okur. API aynı. |
+| `product_photo` tablosu, `kitchen.coverPhoto → file` | `product.photos` ve `kitchen.coverPhoto` **jsonb dosya anlık görüntüsü** (`{ id, path }`); okurken `FileType` örneğine çevrilir | Sıra korunur, listelemede join yok; dosya yolları değişmez. |
+| Kategori `name`'i `Accept-Language`'e göre | API `nameTr` ve `nameEn` döner, mobil dile göre seçer | Backend'in dil başlığı `x-custom-lang`, mobil sabit `Accept-Language: tr_TR` gönderiyor; iki alanı dönmek dil çözümlemesini tek yere (mobil) koyar. |
+| `GET /kitchens/:id`, `GET /products/:id` | `GET /discover/kitchens/:id`, `GET /discover/products/:id` | `/kitchens/me` ile `/kitchens/:id` aynı segment sayısında; ayrı controller'larda kayıt sırasına bağımlı çakışma yerine keşif uçları tek önekte. |
+| `saleType`'a ait olmayan alan null olmalı (aksi 422) | Sunucu o alanı null'a çeker; yalnızca ait olan alan zorunlu | Satış tipi değiştirirken istemci eski alanı temizlemek zorunda kalmaz. |
+| Teslimat kapalıysa 0 kademe | Kademeler saklanır, teslimat kapalıyken keşifte yok sayılır | Aşçı teslimatı kapatıp açınca kademeleri yeniden girmez. |
+| `diet=vegetarian` | Vegan ürünler de eşleşir | Vegan ⊂ vejetaryen. |
+| Hesap silmede mutfak + ürünler "aynı transaction" | `UsersService.remove` içinde sırayla (ürünler → mutfak), mevcut adres/oturum adımları gibi | Silme yolunun geri kalanı da transaction'sız; kayıt soft-delete, tekrar çalıştırılabilir. |
+| Seed mutfakları mevcut seed kullanıcılarına bağlı | 3 ayrı dev kullanıcısı (`+90555000010{1..3}`), ürünler fotoğrafsız | Kullanıcı başına bir mutfak; repoda görsel yok. Mobil fotoğrafsız ürünü placeholder ile gösterir. |
+| `hasKitchen` yalnız `GET /auth/me` | `GET/PATCH /auth/me` ve tüm login yanıtlarındaki `user` | Geri dönen aşçı girişte aşçı moduna yönlendirilebilir. |
+| — | Keşif okuma tarafı (`DiscoveryRepository`) port'suz, doğrudan TypeORM sorgu sınıfı | Salt-okuma SQL'i; davranışı e2e ile test edilir, saf kısımlar (görünürlük, kartlar) birim testli. |
