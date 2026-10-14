@@ -14,6 +14,7 @@ import { RoleEntity } from '../../../../../roles/infrastructure/persistence/rela
 import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
 import { FileEntity } from '../../../../../files/infrastructure/persistence/relational/entities/file.entity';
 
+import { Allergen } from '../../../../../catalog/catalog.enums';
 import { AuthProvidersEnum } from '../../../../../auth/auth-providers.enum';
 import { EntityRelationalHelper } from '../../../../../utils/relational-entity-helper';
 
@@ -21,6 +22,9 @@ import { EntityRelationalHelper } from '../../../../../utils/relational-entity-h
   name: 'user',
 })
 export class UserEntity extends EntityRelationalHelper {
+  @Column({ type: 'simple-array', default: '' })
+  allergenPreferences?: Allergen[];
+
   @Column({ type: Boolean, default: false })
   marketingConsent?: boolean;
 

@@ -3,10 +3,18 @@ import { FileType } from '../../files/domain/file';
 import { Role } from '../../roles/domain/role';
 import { Status } from '../../statuses/domain/status';
 import { ApiProperty } from '@nestjs/swagger';
+import { Allergen } from '../../catalog/catalog.enums';
 
 const idType = Number;
 
 export class User {
+  @ApiProperty({ enum: Allergen, isArray: true })
+  allergenPreferences?: Allergen[];
+
+  /** Derived per request (AuthService); never stored. */
+  @ApiProperty({ type: Boolean })
+  hasKitchen?: boolean;
+
   @ApiProperty({
     type: () => Boolean,
     nullable: false,

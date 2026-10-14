@@ -124,6 +124,8 @@ export class UsersService {
     return this.usersRepository.create({
       // Do not remove comment below.
       // <creating-property-payload />
+      allergenPreferences: createUserDto.allergenPreferences,
+
       marketingConsent: createUserDto.marketingConsent,
 
       kvkkAcceptedAt: createUserDto.kvkkAcceptedAt,
@@ -294,6 +296,8 @@ export class UsersService {
     return this.usersRepository.update(id, {
       // Do not remove comment below.
       // <updating-property-payload />
+      allergenPreferences: updateUserDto.allergenPreferences,
+
       marketingConsent: updateUserDto.marketingConsent,
 
       kvkkAcceptedAt: updateUserDto.kvkkAcceptedAt,

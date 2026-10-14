@@ -9,6 +9,8 @@ import { UserEntity } from '../entities/user.entity';
 export class UserMapper {
   static toDomain(raw: UserEntity): User {
     const domainEntity = new User();
+    domainEntity.allergenPreferences = raw.allergenPreferences;
+
     domainEntity.marketingConsent = raw.marketingConsent;
 
     domainEntity.kvkkAcceptedAt = raw.kvkkAcceptedAt;
@@ -62,6 +64,8 @@ export class UserMapper {
     }
 
     const persistenceEntity = new UserEntity();
+    persistenceEntity.allergenPreferences = domainEntity.allergenPreferences;
+
     persistenceEntity.marketingConsent = domainEntity.marketingConsent;
 
     persistenceEntity.kvkkAcceptedAt = domainEntity.kvkkAcceptedAt;

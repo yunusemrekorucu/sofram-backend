@@ -6,6 +6,9 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   // decorators here
+  ArrayUnique,
+  IsArray,
+  IsEnum,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -14,12 +17,20 @@ import {
   IsBoolean,
   Matches,
 } from 'class-validator';
+import { Allergen } from '../../catalog/catalog.enums';
 import { FileDto } from '../../files/dto/file.dto';
 import { RoleDto } from '../../roles/dto/role.dto';
 import { StatusDto } from '../../statuses/dto/status.dto';
 import { lowerCaseTransformer } from '../../utils/transformers/lower-case.transformer';
 
 export class CreateUserDto {
+  @ApiPropertyOptional({ enum: Allergen, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsEnum(Allergen, { each: true })
+  allergenPreferences?: Allergen[];
+
   @ApiProperty({
     required: false,
     type: () => Boolean,

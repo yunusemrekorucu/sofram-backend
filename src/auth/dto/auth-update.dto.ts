@@ -1,11 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayUnique,
+  IsArray,
   IsBoolean,
+  IsEnum,
   IsEmail,
   IsNotEmpty,
   IsOptional,
   MinLength,
 } from 'class-validator';
+import { Allergen } from '../../catalog/catalog.enums';
 import { FileDto } from '../../files/dto/file.dto';
 import { Transform } from 'class-transformer';
 import { lowerCaseTransformer } from '../../utils/transformers/lower-case.transformer';
@@ -54,4 +58,11 @@ export class AuthUpdateDto {
   @IsOptional()
   @IsBoolean()
   marketingConsent?: boolean;
+
+  @ApiPropertyOptional({ enum: Allergen, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsEnum(Allergen, { each: true })
+  allergenPreferences?: Allergen[];
 }
