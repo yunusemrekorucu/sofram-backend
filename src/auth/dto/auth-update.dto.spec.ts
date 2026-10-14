@@ -29,4 +29,14 @@ describe('AuthUpdateDto.allergenPreferences', () => {
       'allergenPreferences',
     ]);
   });
+
+  it('should reject null', async () => {
+    expect(await invalidFields({ allergenPreferences: null })).toEqual([
+      'allergenPreferences',
+    ]);
+  });
+
+  it('should accept an absent field', async () => {
+    expect(await invalidFields({})).toEqual([]);
+  });
 });

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayUnique,
+  ValidateIf,
   IsArray,
   IsBoolean,
   IsEnum,
@@ -60,7 +61,7 @@ export class AuthUpdateDto {
   marketingConsent?: boolean;
 
   @ApiPropertyOptional({ enum: Allergen, isArray: true })
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsArray()
   @ArrayUnique()
   @IsEnum(Allergen, { each: true })

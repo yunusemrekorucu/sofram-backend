@@ -7,6 +7,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   // decorators here
   ArrayUnique,
+  ValidateIf,
   IsArray,
   IsEnum,
   IsEmail,
@@ -25,7 +26,7 @@ import { lowerCaseTransformer } from '../../utils/transformers/lower-case.transf
 
 export class CreateUserDto {
   @ApiPropertyOptional({ enum: Allergen, isArray: true })
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsArray()
   @ArrayUnique()
   @IsEnum(Allergen, { each: true })
