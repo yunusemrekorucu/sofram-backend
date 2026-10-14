@@ -9,10 +9,12 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { MailModule } from '../mail/mail.module';
 import { SessionModule } from '../session/session.module';
 import { UsersModule } from '../users/users.module';
+import { KitchensModule } from '../kitchens/kitchens.module';
 
 @Module({
   imports: [
     UsersModule,
+    KitchensModule,
     SessionModule,
     PassportModule,
     MailModule,

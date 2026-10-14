@@ -68,7 +68,8 @@ export class AddressesService {
     return this.addressRepository.removeByUserId(userId);
   }
 
-  private findOwned(userId: User['id'], id: Address['id']): Promise<Address> {
+  /** The caller's address, or 404 (also for someone else's). */
+  findOwned(userId: User['id'], id: Address['id']): Promise<Address> {
     return orNotFound(this.addressRepository.findOwned(userId, id));
   }
 }

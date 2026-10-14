@@ -1,12 +1,14 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AllConfigType } from '../config/config.type';
+import { KitchensService } from '../kitchens/kitchens.service';
 import { MailService } from '../mail/mail.service';
 import { SessionService } from '../session/session.service';
 import { User } from '../users/domain/user';
 import { UsersService } from '../users/users.service';
 import { AuthProvidersEnum } from './auth-providers.enum';
 import { AuthService } from './auth.service';
+import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 
 const CONFIG: Record<string, string> = {
   'auth.expires': '15m',
@@ -35,6 +37,7 @@ export const buildAuthService = () => {
     create: jest.fn().mockResolvedValue({ id: 99 }),
     deleteByUserId: jest.fn(),
   };
+  const kitchens = { findByOwner: jest.fn().mockResolvedValue(null) };
   const jwt = { signAsync: jest.fn().mockResolvedValue('signed.jwt') };
   const config = { getOrThrow: (key: string) => CONFIG[key] };
 
@@ -44,9 +47,10 @@ export const buildAuthService = () => {
     sessions as unknown as SessionService,
     {} as MailService,
     config as unknown as ConfigService<AllConfigType>,
+    kitchens as unknown as KitchensService,
   );
 
-  return { service, users, sessions };
+  return { service, users, sessions, kitchens };
 };
 
 describe('AuthService.validatePhoneLogin', () => {
@@ -143,5 +147,27 @@ describe('AuthService.me', () => {
     await expect(
       service.me({ id: 7, role: { id: 2 }, sessionId: 99, iat: 0, exp: 0 }),
     ).rejects.toThrow('Unauthorized');
+  });
+});
+
+describe('AuthService hasKitchen', () => {
+  it('should flag the user on /auth/me', async () => {
+    const { service, users, kitchens } = buildAuthService();
+    users.findById.mockResolvedValue(aUser());
+    kitchens.findByOwner.mockResolvedValue({ id: 'k1' });
+
+    await expect(
+      service.me({ id: 7 } as JwtPayloadType),
+    ).resolves.toMatchObject({ hasKitchen: true });
+    expect(kitchens.findByOwner).toHaveBeenCalledWith(7);
+  });
+
+  it('should flag the user in login responses', async () => {
+    const { service, users } = buildAuthService();
+    users.findByPhoneNumber.mockResolvedValue(aUser());
+
+    const result = await service.validatePhoneLogin('+905551112233');
+
+    expect(result.user.hasKitchen).toBe(false);
   });
 });

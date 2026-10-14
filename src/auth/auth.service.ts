@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { KitchensService } from '../kitchens/kitchens.service';
 import ms from 'ms';
 import crypto from 'crypto';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
@@ -38,6 +39,7 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService<AllConfigType>,
+    private readonly kitchensService: KitchensService,
   ) {}
 
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
@@ -415,7 +417,7 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    return user;
+    return this.withKitchenFlag(user);
   }
 
   async update(
@@ -517,7 +519,8 @@ export class AuthService {
         kvkkAccepted && !currentUser.kvkkAcceptedAt ? new Date() : undefined,
     });
 
-    return this.usersService.findById(userJwtPayload.id);
+    const updated = await this.usersService.findById(userJwtPayload.id);
+    return updated && this.withKitchenFlag(updated);
   }
 
   async refreshToken(
@@ -613,7 +616,12 @@ export class AuthService {
       hash,
     });
 
-    return { refreshToken, token, tokenExpires, user };
+    return {
+      refreshToken,
+      token,
+      tokenExpires,
+      user: await this.withKitchenFlag(user),
+    };
   }
 
   private async getTokensData(data: {
@@ -661,5 +669,12 @@ export class AuthService {
       refreshToken,
       tokenExpires,
     };
+  }
+
+  /** `hasKitchen` is derived, so every response that carries the user sets it. */
+  private async withKitchenFlag(user: User): Promise<User> {
+    user.hasKitchen =
+      (await this.kitchensService.findByOwner(user.id)) !== null;
+    return user;
   }
 }

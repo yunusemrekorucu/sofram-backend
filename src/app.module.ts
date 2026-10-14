@@ -36,8 +36,11 @@ import { AddressesModule } from './addresses/addresses.module';
 
 import { CategoriesModule } from './categories/categories.module';
 
+import { KitchensModule } from './kitchens/kitchens.module';
+
 @Module({
   imports: [
+    KitchensModule,
     CategoriesModule,
     AddressesModule,
     ConfigModule.forRoot({
