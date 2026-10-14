@@ -1,5 +1,7 @@
 import { AddressesService } from '../addresses/addresses.service';
 import { FilesService } from '../files/files.service';
+import { KitchensService } from '../kitchens/kitchens.service';
+import { ProductsService } from '../products/products.service';
 import { SessionService } from '../session/session.service';
 import { User } from './domain/user';
 import { UserRepository } from './infrastructure/persistence/user.repository';
@@ -19,29 +21,38 @@ const buildUsersService = () => {
   };
   const addresses = { removeAllForUser: jest.fn() };
   const sessions = { deleteByUserId: jest.fn() };
+  const products = { removeAllForOwner: jest.fn() };
+  const kitchens = { removeForOwner: jest.fn() };
 
   const service = new UsersService(
     repository as unknown as UserRepository,
     {} as FilesService,
     addresses as unknown as AddressesService,
     sessions as unknown as SessionService,
+    kitchens as unknown as KitchensService,
+    products as unknown as ProductsService,
   );
 
-  return { service, repository, addresses, sessions };
+  return { service, repository, addresses, sessions, kitchens, products };
 };
 
 describe('UsersService.remove', () => {
-  it('should anonymize the user, then delete addresses and sessions', async () => {
-    const { service, repository, addresses, sessions } = buildUsersService();
+  it('should anonymize the user, then remove the menu, kitchen, addresses and sessions', async () => {
+    const { service, repository, addresses, sessions, kitchens, products } =
+      buildUsersService();
 
     await service.remove(7);
 
     expect(repository.anonymizeAndSoftDelete).toHaveBeenCalledWith(7);
+    expect(products.removeAllForOwner).toHaveBeenCalledWith(7);
+    expect(kitchens.removeForOwner).toHaveBeenCalledWith(7);
     expect(addresses.removeAllForUser).toHaveBeenCalledWith(7);
     expect(sessions.deleteByUserId).toHaveBeenCalledWith({ userId: 7 });
 
     const order = [
       repository.anonymizeAndSoftDelete,
+      products.removeAllForOwner,
+      kitchens.removeForOwner,
       addresses.removeAllForUser,
       sessions.deleteByUserId,
     ].map((fn) => fn.mock.invocationCallOrder[0]);

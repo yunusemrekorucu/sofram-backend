@@ -20,6 +20,8 @@ import { Status } from '../statuses/domain/status';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AddressesService } from '../addresses/addresses.service';
 import { SessionService } from '../session/session.service';
+import { KitchensService } from '../kitchens/kitchens.service';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class UsersService {
@@ -28,6 +30,8 @@ export class UsersService {
     private readonly filesService: FilesService,
     private readonly addressesService: AddressesService,
     private readonly sessionService: SessionService,
+    private readonly kitchensService: KitchensService,
+    private readonly productsService: ProductsService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -318,12 +322,15 @@ export class UsersService {
 
   /**
    * The only account-deletion path (DELETE /auth/me and admin
-   * DELETE /users/:id): anonymize + soft delete the user in one UPDATE, then
-   * hard-delete their addresses (GPS) and end every session, which also
-   * revokes outstanding access tokens (see JwtStrategy).
+   * DELETE /users/:id): anonymize + soft delete the user in one UPDATE, take
+   * the menu and kitchen off discovery, hard-delete their addresses (GPS) and
+   * end every session, which also revokes outstanding access tokens (see
+   * JwtStrategy).
    */
   async remove(id: User['id']): Promise<void> {
     await this.usersRepository.anonymizeAndSoftDelete(id);
+    await this.productsService.removeAllForOwner(id);
+    await this.kitchensService.removeForOwner(id);
     await this.addressesService.removeAllForUser(id);
     await this.sessionService.deleteByUserId({ userId: id });
   }

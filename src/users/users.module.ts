@@ -10,6 +10,8 @@ import { RelationalUserPersistenceModule } from './infrastructure/persistence/re
 import { FilesModule } from '../files/files.module';
 import { AddressesModule } from '../addresses/addresses.module';
 import { SessionModule } from '../session/session.module';
+import { KitchensModule } from '../kitchens/kitchens.module';
+import { ProductsModule } from '../products/products.module';
 
 const infrastructurePersistenceModule = RelationalUserPersistenceModule;
 
@@ -20,6 +22,8 @@ const infrastructurePersistenceModule = RelationalUserPersistenceModule;
     FilesModule,
     AddressesModule,
     SessionModule,
+    KitchensModule,
+    ProductsModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

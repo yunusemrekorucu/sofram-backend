@@ -38,8 +38,11 @@ import { CategoriesModule } from './categories/categories.module';
 
 import { KitchensModule } from './kitchens/kitchens.module';
 
+import { ProductsModule } from './products/products.module';
+
 @Module({
   imports: [
+    ProductsModule,
     KitchensModule,
     CategoriesModule,
     AddressesModule,

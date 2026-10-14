@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
-import { APP_URL } from '../utils/constants';
+import { ADMIN_EMAIL, ADMIN_PASSWORD, APP_URL } from '../utils/constants';
 
 // 1×1 PNG; the local file driver accepts .png uploads.
 const PNG = Buffer.from(
@@ -50,7 +50,6 @@ describe('Catalog: kitchens, products and discovery', () => {
   let customer: string;
   let addressId: string;
   let coverId: string;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- read by the Task 5 product specs
   let kitchenId: string;
 
   const kitchenBody = () => ({
@@ -201,6 +200,178 @@ describe('Catalog: kitchens, products and discovery', () => {
       .send({ isPaused: true })
       .expect(404));
 
-  // TASK-5-PRODUCTS
+  let categoryId: string;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the Task 6 discovery specs
+  let soupId: string;
+  let mantiId: string;
+  let kofteId: string;
+
+  it('should list the seeded categories with both names', () =>
+    request(app)
+      .get('/api/v1/categories')
+      .auth(customer, { type: 'bearer' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data.length).toBeGreaterThanOrEqual(8);
+        expect(body.data[0]).toEqual(
+          expect.objectContaining({
+            nameTr: expect.any(String),
+            nameEn: expect.any(String),
+          }),
+        );
+        categoryId = body.data.find(
+          (c: { slug: string }) => c.slug === 'main-dish',
+        ).id;
+        soupId = body.data.find((c: { slug: string }) => c.slug === 'soup').id;
+      }));
+
+  it('should keep category writes to admins', async () => {
+    await request(app)
+      .post('/api/v1/categories')
+      .auth(customer, { type: 'bearer' })
+      .send({ slug: `e2e-${Date.now()}`, nameTr: 'Test', nameEn: 'Test' })
+      .expect(403);
+
+    const { body } = await request(app)
+      .post('/api/v1/auth/email/login')
+      .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+      .expect(200);
+
+    await request(app)
+      .post('/api/v1/categories')
+      .auth(body.data.token, { type: 'bearer' })
+      .send({
+        slug: `e2e-${Date.now()}`,
+        nameTr: 'Test',
+        nameEn: 'Test',
+        isActive: false,
+      })
+      .expect(201)
+      .expect(({ body: created }) => {
+        expect(created.data.isActive).toBe(false);
+      });
+  });
+
+  it('should require the field that belongs to the sale type', async () =>
+    request(app)
+      .post('/api/v1/kitchens/me/products')
+      .auth(cook, { type: 'bearer' })
+      .send({
+        categoryId,
+        name: 'Mercimek Köftesi',
+        priceKurus: 9000,
+        saleType: 'daily_portion',
+        allergens: [],
+        dietTags: ['vegan'],
+        photoIds: [await uploadPng(cook)],
+      })
+      .expect(422)
+      .expect(({ body }) => {
+        expect(body.errors).toEqual([
+          { field: 'portionsAvailable', message: 'required' },
+        ]);
+      }));
+
+  it('should add an on-demand product and clear the other sale field', async () => {
+    const photoIds = [await uploadPng(cook), await uploadPng(cook)];
+
+    const { body } = await request(app)
+      .post('/api/v1/kitchens/me/products')
+      .auth(cook, { type: 'bearer' })
+      .send({
+        categoryId,
+        name: 'Ev Usulü MANTI',
+        description: 'Yoğurtlu',
+        priceKurus: 14000,
+        saleType: 'on_demand',
+        prepMinutes: 45,
+        portionsAvailable: 10,
+        allergens: ['milk', 'gluten'],
+        dietTags: [],
+        photoIds,
+      })
+      .expect(201);
+
+    expect(body.data).toMatchObject({
+      saleType: 'on_demand',
+      prepMinutes: 45,
+      portionsAvailable: null,
+      isActive: true,
+      kitchenId,
+      category: { id: categoryId },
+    });
+    expect(body.data.photos.map((p: { id: string }) => p.id)).toEqual(photoIds);
+    expect(body.data).not.toHaveProperty('searchText');
+    mantiId = body.data.id;
+  });
+
+  it('should add a daily-portion product', async () => {
+    const { body } = await request(app)
+      .post('/api/v1/kitchens/me/products')
+      .auth(cook, { type: 'bearer' })
+      .send({
+        categoryId,
+        name: 'Mercimek Köftesi',
+        priceKurus: 9000,
+        saleType: 'daily_portion',
+        portionsAvailable: 3,
+        allergens: [],
+        dietTags: ['vegan'],
+        photoIds: [await uploadPng(cook)],
+      })
+      .expect(201);
+
+    expect(body.data).toMatchObject({
+      prepMinutes: null,
+      portionsAvailable: 3,
+    });
+    kofteId = body.data.id;
+  });
+
+  it('should list the cook’s products, newest first', () =>
+    request(app)
+      .get('/api/v1/kitchens/me/products')
+      .auth(cook, { type: 'bearer' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data.map((p: { id: string }) => p.id)).toEqual([
+          kofteId,
+          mantiId,
+        ]);
+      }));
+
+  it('should switch the sale type back and forth', async () => {
+    await request(app)
+      .patch(`/api/v1/kitchens/me/products/${mantiId}`)
+      .auth(cook, { type: 'bearer' })
+      .send({ saleType: 'daily_portion', portionsAvailable: 5 })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data).toMatchObject({
+          prepMinutes: null,
+          portionsAvailable: 5,
+        });
+      });
+
+    await request(app)
+      .patch(`/api/v1/kitchens/me/products/${mantiId}`)
+      .auth(cook, { type: 'bearer' })
+      .send({ saleType: 'on_demand', prepMinutes: 45 })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data).toMatchObject({
+          prepMinutes: 45,
+          portionsAvailable: null,
+        });
+      });
+  });
+
+  it('should 404 product writes from someone else', () =>
+    request(app)
+      .patch(`/api/v1/kitchens/me/products/${mantiId}`)
+      .auth(customer, { type: 'bearer' })
+      .send({ priceKurus: 1 })
+      .expect(404));
+
   // TASK-6-DISCOVERY
 });
