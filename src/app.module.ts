@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
+import discoveryConfig from './discovery/config/discovery.config';
 import mailConfig from './mail/config/mail.config';
 import fileConfig from './files/config/file.config';
 import googleConfig from './auth-google/config/google.config';
@@ -42,6 +43,7 @@ import { AddressesModule } from './addresses/addresses.module';
         databaseConfig,
         authConfig,
         appConfig,
+        discoveryConfig,
         mailConfig,
         fileConfig,
         googleConfig,
