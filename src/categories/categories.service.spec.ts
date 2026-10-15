@@ -69,6 +69,16 @@ describe('CategoriesService', () => {
     );
   });
 
+  it('should return the category unchanged for an empty update', async () => {
+    const { service, repository } = build();
+    repository.findById.mockResolvedValue(aCategory());
+
+    await expect(service.update('c1', {})).resolves.toMatchObject({
+      id: 'c1',
+    });
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
   it('should 404 an unknown category on update', async () => {
     const { service } = build();
 

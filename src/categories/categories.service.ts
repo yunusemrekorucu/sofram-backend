@@ -37,13 +37,15 @@ export class CategoriesService {
   }
 
   async update(id: Category['id'], dto: UpdateCategoryDto): Promise<Category> {
-    await orNotFound(this.categoryRepository.findById(id));
+    const current = await orNotFound(this.categoryRepository.findById(id));
 
     if (dto.slug !== undefined) {
       await this.assertSlugFree(dto.slug, id);
     }
 
-    return this.categoryRepository.update(id, dto);
+    const hasChanges = Object.values(dto).some((value) => value !== undefined);
+
+    return hasChanges ? this.categoryRepository.update(id, dto) : current;
   }
 
   private async assertSlugFree(
