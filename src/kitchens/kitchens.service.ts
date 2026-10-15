@@ -102,7 +102,7 @@ export class KitchensService {
 
   /** Account deletion; products go first (ProductsService.removeAllForOwner). */
   removeForOwner(ownerId: User['id']): Promise<void> {
-    return this.kitchenRepository.softDeleteByOwnerId(ownerId);
+    return this.kitchenRepository.anonymizeAndSoftDeleteByOwnerId(ownerId);
   }
 
   private withDerived(

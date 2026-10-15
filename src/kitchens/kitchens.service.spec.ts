@@ -56,7 +56,7 @@ const build = () => {
       stored = Object.assign(new Kitchen(), data, { id });
       return Promise.resolve(stored);
     }),
-    softDeleteByOwnerId: jest.fn(),
+    anonymizeAndSoftDeleteByOwnerId: jest.fn(),
   };
   const addresses = {
     findOwned: jest

@@ -142,6 +142,7 @@ export class UsersRelationalRepository implements UserRepository {
         lastName: null,
         socialId: null,
         photo: null,
+        allergenPreferences: [],
         deletedAt: new Date(),
       },
     );

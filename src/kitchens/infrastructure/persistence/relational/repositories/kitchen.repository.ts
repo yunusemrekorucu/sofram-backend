@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { User } from '../../../../../users/domain/user';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { Kitchen } from '../../../../domain/kitchen';
@@ -44,7 +44,27 @@ export class KitchenRelationalRepository implements KitchenRepository {
     return KitchenMapper.toDomain(entity);
   }
 
-  async softDeleteByOwnerId(ownerId: User['id']): Promise<void> {
-    await this.kitchenRepository.softDelete({ ownerId: Number(ownerId) });
+  /**
+   * The kitchen row is a copy of an address-book entry (full address and exact
+   * coordinates), which account deletion hard-deletes for KVKK. A plain soft
+   * delete would keep that copy, so one UPDATE scrubs it and sets deletedAt.
+   */
+  async anonymizeAndSoftDeleteByOwnerId(ownerId: User['id']): Promise<void> {
+    await this.kitchenRepository.update(
+      { ownerId: Number(ownerId), deletedAt: IsNull() },
+      {
+        name: '',
+        description: null,
+        coverPhoto: null,
+        fullAddress: '',
+        district: '',
+        neighborhood: '',
+        latitude: 0,
+        longitude: 0,
+        searchText: '',
+        isPaused: true,
+        deletedAt: new Date(),
+      },
+    );
   }
 }

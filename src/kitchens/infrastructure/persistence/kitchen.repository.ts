@@ -14,5 +14,9 @@ export abstract class KitchenRepository {
     payload: Partial<Kitchen>,
   ): Promise<Kitchen>;
 
-  abstract softDeleteByOwnerId(ownerId: User['id']): Promise<void>;
+  /**
+   * Account deletion: soft-deletes the kitchen and scrubs its personal data
+   * (KVKK; it holds a copy of an address that is hard-deleted).
+   */
+  abstract anonymizeAndSoftDeleteByOwnerId(ownerId: User['id']): Promise<void>;
 }
