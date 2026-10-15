@@ -73,7 +73,8 @@ export class DiscoveryRepository {
       .addSelect(OPEN_NOW, 'open_now');
     this.whereReachable(qb, filter);
 
-    const productFilters = this.productFilters('p', filter);
+    // allergenSafe filters products only; it never hides a kitchen.
+    const productFilters = this.productFilters('p', filter, false);
 
     if (productFilters.length > 0 || filter.query) {
       const matches = filter.query
@@ -207,7 +208,11 @@ export class DiscoveryRepository {
       );
   }
 
-  private productFilters(p: string, filter: DiscoveryFilter): string[] {
+  private productFilters(
+    p: string,
+    filter: DiscoveryFilter,
+    withAllergens = true,
+  ): string[] {
     const conditions: string[] = [];
 
     if (filter.categoryId) {
@@ -224,7 +229,7 @@ export class DiscoveryRepository {
       );
     }
 
-    if (filter.excludeAllergens.length > 0) {
+    if (withAllergens && filter.excludeAllergens.length > 0) {
       conditions.push(
         `NOT (string_to_array(${p}."allergens", ',') && CAST(:excludeAllergens AS text[]))`,
       );

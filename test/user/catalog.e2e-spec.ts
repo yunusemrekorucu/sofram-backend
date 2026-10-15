@@ -535,6 +535,21 @@ describe('Catalog: kitchens, products and discovery', () => {
       });
 
     await discover(`products/${kofteId}`, customer, north(0)).expect(404);
+
+    // Only the milk-containing manti is left; allergenSafe filters products,
+    // never kitchens.
+    await discover('kitchens', customer, { ...north(0), allergenSafe: true })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).toContain(kitchenId);
+      });
+
+    await discover('products', customer, { ...north(0), allergenSafe: true })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(ids(body)).not.toContain(kofteId);
+        expect(ids(body)).not.toContain(mantiId);
+      });
   });
 
   it('should keep a paused kitchen listed but closed', async () => {
