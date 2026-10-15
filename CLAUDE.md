@@ -11,8 +11,9 @@ Use the `generate` skill (auto-loaded from [.claude/skills/generate/SKILL.md](.c
 ## Local environment
 
 - PostgreSQL 16 from Homebrew on `localhost:5432`, database and role `sofram` (credentials in `.env`, never committed). No Docker.
-- Mail goes to maildev: `npx maildev -s 1025 -w 1080`, inbox at <http://localhost:1080>.
+- Mail goes to maildev: `npx -y maildev@2.2.1 -s 1025 -w 1080`, inbox at <http://localhost:1080>. Pinned because maildev 3 moved its API to `/api/email`; the e2e suite reads `/email`.
 - API on `http://localhost:3001`, prefix `/api/v1`, Swagger at `/docs`.
+- `npm run build` deletes `dist/` and stops a running `npm run start:dev`; use `npx tsc --noEmit -p tsconfig.json` for a type check while the dev API runs.
 - Seeded users: `admin@example.com` / `secret` (Admin), `john.doe@example.com` / `secret` (User).
 
 ## API conventions
@@ -23,3 +24,8 @@ Use the `generate` skill (auto-loaded from [.claude/skills/generate/SKILL.md](.c
 - Account deletion (`DELETE /auth/me`, admin `DELETE /users/:id`) goes only through `UsersService.remove`: one UPDATE anonymizes the user (phone → `deleted:<id>`, email/names/photo/socialId → null) and soft-deletes it, then addresses are hard-deleted and sessions ended. `JwtStrategy` checks the session on every request, so logout and deletion revoke access tokens immediately.
 - `profileCompleted` is derived in `UserMapper.toDomain` (first name + last name + KVKK consent) — never store it.
 - Phase specs and plans: `docs/superpowers/specs/`, `docs/superpowers/plans/`.
+- Catalog (Faz 2): one kitchen per user (`/kitchens/me`), its menu under `/kitchens/me/products`; customers read through `/discover/*` only. Kitchen address is a copy of an address-book entry; customers get coordinates rounded to `DISCOVERY_COORD_PRECISION`, never `fullAddress`, and customer-facing distance, pickup/delivery availability and fee are measured from that rounded point (so probing lat/lng cannot recover the exact location). Delivery tiers and weekly hours are jsonb on `kitchen`; `deliveryRadiusKm` and every `searchText` are derived on write — never set them by hand.
+- Money is integer kuruş (`priceKurus`, `feeKurus`). Time is `Europe/Istanbul` (`catalog/opening-state.ts`).
+- Search text goes through `catalog/fold-turkish.ts` both when stored and when queried; Postgres `lower()` gets İ/I wrong.
+- Discovery visibility lives twice and must stay in step: SQL in `discovery/discovery.repository.ts`, TypeScript in `discovery/visibility.ts`.
+- Dev seed (`npm run seed:run:relational`) adds categories everywhere and, outside production, three Kadıköy kitchens whose cooks log in with `dev:+905550000101..103`.
