@@ -14,6 +14,7 @@ import { ProductMapper } from '../products/infrastructure/persistence/relational
 export type DiscoveryFilter = {
   point: LatLng;
   pickupRadiusKm: number;
+  coordPrecision: number;
   /** Istanbul weekday and "HH:mm" — orders open kitchens first. */
   clock: { dayOfWeek: number; time: string };
   categoryId?: string;
@@ -32,7 +33,13 @@ export type ProductHit = {
   distanceKm: number;
 };
 
-const DISTANCE = haversineSql('k');
+/** Customer-facing distance is measured to the rounded point, never the exact one. */
+const rounded = (column: string) =>
+  `round(k."${column}"::numeric, :precision)::double precision`;
+const DISTANCE = haversineSql(rounded('latitude'), rounded('longitude'));
+
+/** Rounding moves a point by less than this (km). */
+const ROUNDING_SLACK_KM = 0.1;
 
 /** openingState().isOpenNow in SQL; "HH:mm" strings sort in time order. */
 const OPEN_NOW =
@@ -185,7 +192,8 @@ export class DiscoveryRepository {
   ): void {
     const box = boundingBox(
       filter.point,
-      Math.max(MAX_DELIVERY_RADIUS_KM, filter.pickupRadiusKm),
+      Math.max(MAX_DELIVERY_RADIUS_KM, filter.pickupRadiusKm) +
+        ROUNDING_SLACK_KM,
     );
 
     qb.andWhere('k."deletedAt" IS NULL')
@@ -235,6 +243,7 @@ export class DiscoveryRepository {
       lat: filter.point.latitude,
       lng: filter.point.longitude,
       pickupRadiusKm: filter.pickupRadiusKm,
+      precision: filter.coordPrecision,
       dayOfWeek: filter.clock.dayOfWeek,
       time: filter.clock.time,
       categoryId: filter.categoryId,

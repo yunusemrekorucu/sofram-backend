@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { likePattern } from '../catalog/fold-turkish';
-import { haversineKm } from '../catalog/geo';
+import { haversineKm, roundCoord } from '../catalog/geo';
 import { istanbulClock } from '../catalog/opening-state';
 import { AllConfigType } from '../config/config.type';
 import { Kitchen } from '../kitchens/domain/kitchen';
@@ -80,7 +80,7 @@ export class DiscoveryService {
     const kitchen = await orNotFound(
       this.discoveryRepository.findKitchenById(id),
     );
-    const distanceKm = haversineKm(ctx.point, kitchen);
+    const distanceKm = this.distanceTo(kitchen, ctx);
 
     if (
       !this.isOwner(kitchen, ctx) &&
@@ -105,7 +105,7 @@ export class DiscoveryService {
     const { product, kitchen } = await orNotFound(
       this.discoveryRepository.findProductById(id),
     );
-    const distanceKm = haversineKm(ctx.point, kitchen);
+    const distanceKm = this.distanceTo(kitchen, ctx);
     const visible =
       isKitchenReachable(kitchen, distanceKm, ctx.pickupRadiusKm) &&
       isProductListed(product);
@@ -115,6 +115,14 @@ export class DiscoveryService {
     }
 
     return productDetail(product, kitchen, distanceKm, ctx);
+  }
+
+  /** Measured to the rounded point, so probing cannot recover the exact one. */
+  private distanceTo(kitchen: Kitchen, ctx: ViewerContext): number {
+    return haversineKm(ctx.point, {
+      latitude: roundCoord(kitchen.latitude, ctx.coordPrecision),
+      longitude: roundCoord(kitchen.longitude, ctx.coordPrecision),
+    });
   }
 
   private isOwner(kitchen: Kitchen, ctx: ViewerContext): boolean {
@@ -147,6 +155,7 @@ export class DiscoveryService {
     return {
       point: ctx.point,
       pickupRadiusKm: ctx.pickupRadiusKm,
+      coordPrecision: ctx.coordPrecision,
       clock: istanbulClock(ctx.now),
       categoryId: query.categoryId,
       diet: query.diet,

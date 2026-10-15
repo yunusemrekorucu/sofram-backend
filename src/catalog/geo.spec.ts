@@ -34,10 +34,10 @@ describe('boundingBox', () => {
 });
 
 describe('haversineSql', () => {
-  it('should reference the alias with quoted columns', () => {
-    const sql = haversineSql('k');
-    expect(sql).toContain('k."latitude"');
-    expect(sql).toContain('k."longitude"');
+  it('should embed the given expressions', () => {
+    const sql = haversineSql('LAT_EXPR', 'LNG_EXPR');
+    expect(sql).toContain('LAT_EXPR');
+    expect(sql).toContain('LNG_EXPR');
     expect(sql).toContain(':lat');
     expect(sql).toContain(':lng');
   });

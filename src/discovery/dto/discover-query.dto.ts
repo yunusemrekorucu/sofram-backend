@@ -67,6 +67,7 @@ export class DiscoverQueryDto extends PointQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(1000)
   page: number = 1;
 
   @ApiPropertyOptional({ default: 20, maximum: 50 })

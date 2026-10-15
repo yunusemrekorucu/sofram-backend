@@ -397,8 +397,11 @@ describe('Catalog: kitchens, products and discovery', () => {
           priceKurus: 14000,
           photo: { id: expect.any(String) },
           allergenWarnings: [],
-          kitchen: { id: kitchenId, distanceKm: 0 },
+          kitchen: { id: kitchenId },
         });
+        expect(
+          (find(body, mantiId)?.kitchen as { distanceKm: number }).distanceKm,
+        ).toBeLessThanOrEqual(0.1);
         expect(find(body, mantiId)).not.toHaveProperty('searchText');
       }));
 
@@ -576,5 +579,6 @@ describe('Catalog: kitchens, products and discovery', () => {
       });
 
     await discover(`kitchens/${kitchenId}`, customer, north(0)).expect(404);
+    await discover(`products/${mantiId}`, customer, north(0)).expect(404);
   });
 });

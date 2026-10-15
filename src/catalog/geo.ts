@@ -18,16 +18,19 @@ export function haversineKm(a: LatLng, b: LatLng): number {
 }
 
 /**
- * `haversineKm` as SQL, from `alias.latitude/longitude` to `:lat`/`:lng`.
+ * `haversineKm` as SQL, from the given latitude/longitude SQL expressions to `:lat`/`:lng`.
  * Keep the two in step: the API filters with this and re-checks with that.
  */
-export const haversineSql = (alias: string): string =>
+export const haversineSql = (
+  latitudeSql: string,
+  longitudeSql: string,
+): string =>
   `(2 * ${EARTH_RADIUS_KM} * asin(least(1, sqrt(` +
-  `power(sin(radians(${alias}."latitude" - :lat) / 2), 2) + ` +
-  `cos(radians(:lat)) * cos(radians(${alias}."latitude")) * ` +
-  `power(sin(radians(${alias}."longitude" - :lng) / 2), 2)))))`;
+  `power(sin(radians(${latitudeSql} - :lat) / 2), 2) + ` +
+  `cos(radians(:lat)) * cos(radians(${latitudeSql})) * ` +
+  `power(sin(radians(${longitudeSql} - :lng) / 2), 2)))))`;
 
-/** Index-friendly pre-filter; slightly larger than the circle it bounds. */
+/** Index-friendly pre-filter; approximates the circle (not guaranteed larger at the east/west edges). */
 export function boundingBox(center: LatLng, radiusKm: number) {
   const dLat = radiusKm / KM_PER_DEGREE;
   const dLng = radiusKm / (KM_PER_DEGREE * Math.cos(radians(center.latitude)));
