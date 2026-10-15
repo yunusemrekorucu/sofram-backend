@@ -2,13 +2,30 @@ import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateUserDto } from './create-user.dto';
 
 import { Transform, Type } from 'class-transformer';
-import { IsEmail, IsOptional, MinLength } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
+import { Allergen } from '../../catalog/catalog.enums';
 import { FileDto } from '../../files/dto/file.dto';
 import { RoleDto } from '../../roles/dto/role.dto';
 import { StatusDto } from '../../statuses/dto/status.dto';
 import { lowerCaseTransformer } from '../../utils/transformers/lower-case.transformer';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
+  // PartialType adds @IsOptional, which would let null reach a NOT NULL column.
+  @ApiPropertyOptional({ enum: Allergen, isArray: true })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsArray()
+  @ArrayUnique()
+  @IsEnum(Allergen, { each: true })
+  allergenPreferences?: Allergen[];
+
   @ApiPropertyOptional({ example: 'test1@example.com', type: String })
   @Transform(lowerCaseTransformer)
   @IsOptional()
