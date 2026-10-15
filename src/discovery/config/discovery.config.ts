@@ -10,8 +10,10 @@ class EnvironmentVariablesValidator {
   @IsOptional()
   DISCOVERY_PICKUP_RADIUS_KM: number;
 
+  // At least 3: the 0.1 km rounding slack in discovery.repository.ts assumes it;
+  // coarser rounding would re-open the location-probing leak.
   @IsInt()
-  @Min(0)
+  @Min(3)
   @Max(6)
   @IsOptional()
   DISCOVERY_COORD_PRECISION: number;
