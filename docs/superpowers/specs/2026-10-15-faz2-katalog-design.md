@@ -238,3 +238,5 @@ Sepet, sipariş, porsiyon düşme, ücretsiz teslimat eşiğinin uygulanması (F
 | Seed mutfakları mevcut seed kullanıcılarına bağlı | 3 ayrı dev kullanıcısı (`+90555000010{1..3}`), ürünler fotoğrafsız | Kullanıcı başına bir mutfak; repoda görsel yok. Mobil fotoğrafsız ürünü placeholder ile gösterir. |
 | `hasKitchen` yalnız `GET /auth/me` | `GET/PATCH /auth/me` ve tüm login yanıtlarındaki `user` | Geri dönen aşçı girişte aşçı moduna yönlendirilebilir. |
 | — | Keşif okuma tarafı (`DiscoveryRepository`) port'suz, doğrudan TypeORM sorgu sınıfı | Salt-okuma SQL'i; davranışı e2e ile test edilir, saf kısımlar (görünürlük, kartlar) birim testli. |
+| §1 "Mesafe sunucuda tam koordinatla hesaplanır" | Müşteriye dönen mesafe, gel-al/teslimat uygunluğu, teslimat ücreti ve detay 200/404 sınırı **yuvarlanmış** mutfak noktasından (`DISCOVERY_COORD_PRECISION`) hesaplanır; bounding box tam koordinatlı index'te kalır | `lat/lng` istemciden geldiği için tam koordinattan hesaplanan mesafe, farklı noktalardan sorgulanarak evin tam yerini verir (trilaterasyon). Sınırlar en fazla ~70 m kayar. |
+| `page` sınırsız | `page ≤ 1000` | Çok büyük `page` 500 veriyordu. |
