@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from '@jest/globals';
+import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { randomUUID } from 'crypto';
 import request from 'supertest';
 import { APP_URL } from '../utils/constants';
@@ -741,5 +741,52 @@ describe('Orders', () => {
           ]);
           expect(done[7]).toBe(orderA);
         }));
+  });
+
+  describe('expiry', () => {
+    const db = testDatabase();
+
+    beforeAll(async () => {
+      await db.initialize();
+    });
+
+    afterAll(async () => {
+      await db.destroy();
+    });
+
+    it('should expire an unanswered order on the next read and give everything back', async () => {
+      const order = await placed({
+        kitchenId,
+        fulfillment: 'pickup',
+        items: [{ productId: kofteId, quantity: 2 }],
+        expectedTotalKurus: 18900,
+      });
+      expect(await portionsOf(kofteId)).toBe(3);
+
+      // Three minutes are too long for a test: move the deadline instead.
+      await db.query(
+        `UPDATE "order" SET "expiresAt" = now() - interval '1 minute' WHERE id = $1`,
+        [order.id],
+      );
+
+      await get('/kitchens/me/orders?tab=new', cook)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(ids(body)).not.toContain(order.id);
+        });
+
+      await get(`/orders/${order.id}`, customer)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data).toMatchObject({
+            status: 'expired',
+            cancelledBy: 'system',
+            reason: null,
+            payment: { status: 'refunded' },
+          });
+        });
+
+      expect(await portionsOf(kofteId)).toBe(5);
+    });
   });
 });

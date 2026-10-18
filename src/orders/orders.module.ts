@@ -11,6 +11,7 @@ import { CookOrdersService } from './cook-orders.service';
 import { RelationalOrderPersistenceModule } from './infrastructure/persistence/relational/relational-persistence.module';
 import { OrderLifecycleService } from './order-lifecycle.service';
 import { OrdersController } from './orders.controller';
+import { OrdersExpiryTask } from './orders-expiry.task';
 import { OrdersService } from './orders.service';
 
 @Module({
@@ -23,7 +24,12 @@ import { OrdersService } from './orders.service';
     AddressesModule,
   ],
   controllers: [OrdersController, CookOrdersController],
-  providers: [OrdersService, CookOrdersService, OrderLifecycleService],
+  providers: [
+    OrdersService,
+    CookOrdersService,
+    OrderLifecycleService,
+    OrdersExpiryTask,
+  ],
   exports: [OrdersService],
 })
 export class OrdersModule {}
