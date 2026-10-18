@@ -8,6 +8,7 @@ import appConfig from './config/app.config';
 import discoveryConfig from './discovery/config/discovery.config';
 import mailConfig from './mail/config/mail.config';
 import ordersConfig from './orders/config/orders.config';
+import paymentsConfig from './payments/config/payments.config';
 import fileConfig from './files/config/file.config';
 import googleConfig from './auth-google/config/google.config';
 import appleConfig from './auth-apple/config/apple.config';
@@ -67,6 +68,7 @@ import { PaymentsModule } from './payments/payments.module';
         googleConfig,
         appleConfig,
         ordersConfig,
+        paymentsConfig,
       ],
       envFilePath: ['.env'],
     }),
