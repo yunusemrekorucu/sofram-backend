@@ -37,6 +37,8 @@ type SeedKitchen = {
   longitude: number;
   pickupEnabled: boolean;
   deliveryEnabled: boolean;
+  freeDeliveryMinKurus: number | null;
+  minOrderKurus: number | null;
   products: SeedProduct[];
 };
 
@@ -66,6 +68,8 @@ const KITCHENS: SeedKitchen[] = [
     longitude: 29.0254,
     pickupEnabled: true,
     deliveryEnabled: true,
+    freeDeliveryMinKurus: 30000,
+    minOrderKurus: null,
     products: [
       {
         category: 'pastry',
@@ -122,6 +126,8 @@ const KITCHENS: SeedKitchen[] = [
     longitude: 29.0387,
     pickupEnabled: true,
     deliveryEnabled: false,
+    freeDeliveryMinKurus: null,
+    minOrderKurus: null,
     products: [
       {
         category: 'olive-oil',
@@ -178,6 +184,8 @@ const KITCHENS: SeedKitchen[] = [
     longitude: 29.0389,
     pickupEnabled: false,
     deliveryEnabled: true,
+    freeDeliveryMinKurus: null,
+    minOrderKurus: 15000,
     products: [
       {
         category: 'pastry',
@@ -284,7 +292,8 @@ export class KitchenSeedService {
             deliveryEnabled: seed.deliveryEnabled,
             deliveryTiers: TIERS,
           }),
-          freeDeliveryMinKurus: 30000,
+          freeDeliveryMinKurus: seed.freeDeliveryMinKurus,
+          minOrderKurus: seed.minOrderKurus,
           hours: WEEKDAYS_11_TO_20,
           isPaused: false,
           isVerified: false,

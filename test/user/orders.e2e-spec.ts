@@ -789,4 +789,48 @@ describe('Orders', () => {
       expect(await portionsOf(kofteId)).toBe(5);
     });
   });
+
+  describe('account deletion', () => {
+    const deleteAccount = (token: string) =>
+      request(app).delete('/api/v1/auth/me').auth(token, { type: 'bearer' });
+
+    it('should wait for open orders on either side, then scrub the delivery address', async () => {
+      const order = await placed({
+        kitchenId,
+        fulfillment: 'delivery',
+        addressId: nearId,
+        items: [{ productId: mantiId, quantity: 1 }],
+        expectedTotalKurus: 16200,
+      });
+
+      await deleteAccount(customer)
+        .expect(409)
+        .expect(({ body }) => {
+          expect(body.message).toBe('activeOrdersExist');
+        });
+      await deleteAccount(cook).expect(409);
+
+      await step(order.id, 'reject', { reason: 'other' }).expect(200);
+      await deleteAccount(customer).expect(204);
+
+      await get(`/kitchens/me/orders/${order.id}`, cook)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data).toMatchObject({
+            status: 'rejected',
+            deliveryAddress: null,
+            customerName: null,
+          });
+        });
+
+      // Earlier, completed delivery orders lose the copy too.
+      await get(`/kitchens/me/orders/${orderC}`, cook)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.deliveryAddress).toBeNull();
+        });
+
+      await deleteAccount(cook).expect(204);
+    });
+  });
 });

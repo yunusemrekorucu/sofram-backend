@@ -6,6 +6,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { TypeOrmConfigService } from '../../typeorm-config.service';
 import { CategorySeedModule } from './category/category-seed.module';
 import { KitchenSeedModule } from './kitchen/kitchen-seed.module';
+import { OrderSeedModule } from './order/order-seed.module';
 import { RoleSeedModule } from './role/role-seed.module';
 import { StatusSeedModule } from './status/status-seed.module';
 import { UserSeedModule } from './user/user-seed.module';
@@ -19,6 +20,7 @@ import appConfig from '../../../config/app.config';
     UserSeedModule,
     CategorySeedModule,
     KitchenSeedModule,
+    OrderSeedModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, appConfig],

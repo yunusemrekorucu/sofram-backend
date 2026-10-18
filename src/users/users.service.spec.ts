@@ -1,6 +1,8 @@
+import { ConflictException } from '@nestjs/common';
 import { AddressesService } from '../addresses/addresses.service';
 import { FilesService } from '../files/files.service';
 import { KitchensService } from '../kitchens/kitchens.service';
+import { OrdersService } from '../orders/orders.service';
 import { ProductsService } from '../products/products.service';
 import { SessionService } from '../session/session.service';
 import { User } from './domain/user';
@@ -23,6 +25,10 @@ const buildUsersService = () => {
   const sessions = { deleteByUserId: jest.fn() };
   const products = { removeAllForOwner: jest.fn() };
   const kitchens = { removeForOwner: jest.fn() };
+  const orders = {
+    assertNoActiveOrders: jest.fn().mockResolvedValue(undefined),
+    clearDeliveryAddresses: jest.fn(),
+  };
 
   const service = new UsersService(
     repository as unknown as UserRepository,
@@ -31,32 +37,64 @@ const buildUsersService = () => {
     sessions as unknown as SessionService,
     kitchens as unknown as KitchensService,
     products as unknown as ProductsService,
+    orders as unknown as OrdersService,
   );
 
-  return { service, repository, addresses, sessions, kitchens, products };
+  return {
+    service,
+    repository,
+    addresses,
+    sessions,
+    kitchens,
+    products,
+    orders,
+  };
 };
 
 describe('UsersService.remove', () => {
-  it('should anonymize the user, then remove the menu, kitchen, addresses and sessions', async () => {
-    const { service, repository, addresses, sessions, kitchens, products } =
-      buildUsersService();
+  it('should anonymize the user, then remove order addresses, the menu, kitchen, addresses and sessions', async () => {
+    const {
+      service,
+      repository,
+      addresses,
+      sessions,
+      kitchens,
+      products,
+      orders,
+    } = buildUsersService();
 
     await service.remove(7);
 
+    expect(orders.assertNoActiveOrders).toHaveBeenCalledWith(7);
     expect(repository.anonymizeAndSoftDelete).toHaveBeenCalledWith(7);
+    expect(orders.clearDeliveryAddresses).toHaveBeenCalledWith(7);
     expect(products.removeAllForOwner).toHaveBeenCalledWith(7);
     expect(kitchens.removeForOwner).toHaveBeenCalledWith(7);
     expect(addresses.removeAllForUser).toHaveBeenCalledWith(7);
     expect(sessions.deleteByUserId).toHaveBeenCalledWith({ userId: 7 });
 
     const order = [
+      orders.assertNoActiveOrders,
       repository.anonymizeAndSoftDelete,
+      orders.clearDeliveryAddresses,
       products.removeAllForOwner,
       kitchens.removeForOwner,
       addresses.removeAllForUser,
       sessions.deleteByUserId,
     ].map((fn) => fn.mock.invocationCallOrder[0]);
     expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+});
+
+describe('UsersService.remove with open orders', () => {
+  it('should refuse before touching anything', async () => {
+    const { service, repository, orders } = buildUsersService();
+    orders.assertNoActiveOrders.mockRejectedValue(
+      new ConflictException({ status: 409, error: 'activeOrdersExist' }),
+    );
+
+    await expect(service.remove(7)).rejects.toBeInstanceOf(ConflictException);
+    expect(repository.anonymizeAndSoftDelete).not.toHaveBeenCalled();
   });
 });
 

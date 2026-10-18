@@ -22,6 +22,7 @@ import { AddressesService } from '../addresses/addresses.service';
 import { SessionService } from '../session/session.service';
 import { KitchensService } from '../kitchens/kitchens.service';
 import { ProductsService } from '../products/products.service';
+import { OrdersService } from '../orders/orders.service';
 
 @Injectable()
 export class UsersService {
@@ -32,6 +33,7 @@ export class UsersService {
     private readonly sessionService: SessionService,
     private readonly kitchensService: KitchensService,
     private readonly productsService: ProductsService,
+    private readonly ordersService: OrdersService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -322,13 +324,17 @@ export class UsersService {
 
   /**
    * The only account-deletion path (DELETE /auth/me and admin
-   * DELETE /users/:id): anonymize + soft delete the user in one UPDATE, take
-   * the menu and kitchen off discovery, hard-delete their addresses (GPS) and
-   * end every session, which also revokes outstanding access tokens (see
+   * DELETE /users/:id). Refused (409 activeOrdersExist) while an order is
+   * open as customer or cook. Then: anonymize + soft delete the user in one
+   * UPDATE, clear the delivery-address copies on their orders, take the menu
+   * and kitchen off discovery, hard-delete their addresses (GPS) and end
+   * every session, which also revokes outstanding access tokens (see
    * JwtStrategy).
    */
   async remove(id: User['id']): Promise<void> {
+    await this.ordersService.assertNoActiveOrders(id);
     await this.usersRepository.anonymizeAndSoftDelete(id);
+    await this.ordersService.clearDeliveryAddresses(id);
     await this.productsService.removeAllForOwner(id);
     await this.kitchensService.removeForOwner(id);
     await this.addressesService.removeAllForUser(id);
