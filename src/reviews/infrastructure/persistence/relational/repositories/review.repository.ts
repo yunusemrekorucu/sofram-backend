@@ -198,9 +198,13 @@ export class ReviewRelationalRepository implements ReviewRepository {
 
   async softDelete(id: Review['id']): Promise<void> {
     await this.reviews.manager.transaction(async (manager) => {
-      const review = await manager.findOneOrFail(ReviewEntity, {
-        where: { id },
-      });
+      const review = await manager.findOne(ReviewEntity, { where: { id } });
+
+      // Already soft-deleted by a concurrent request: nothing left to do.
+      if (!review) {
+        return;
+      }
+
       await this.lockKitchen(manager, review.kitchenId);
       await manager.softDelete(ReviewEntity, { id });
       await this.recompute(manager, review.kitchenId);

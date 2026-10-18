@@ -370,7 +370,14 @@ export class OrderRelationalRepository implements OrderRepository {
   }
 
   async markRead(id: Order['id'], marker: ReadMarker, at: Date): Promise<void> {
-    await this.orders.update({ id }, { [marker]: at });
+    // GREATEST: parallel reads can never move the marker backwards.
+    await this.orders
+      .createQueryBuilder()
+      .update(OrderEntity)
+      .set({ [marker]: () => `GREATEST(COALESCE("${marker}", :at), :at)` })
+      .where('id = :id', { id })
+      .setParameter('at', at)
+      .execute();
   }
 
   /** ON CONFLICT DO NOTHING + retry: a code collision never aborts the transaction. */
