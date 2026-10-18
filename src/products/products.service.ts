@@ -33,6 +33,11 @@ export class ProductsService {
     private readonly filesService: FilesService,
   ) {}
 
+  /** Order quotes: the requested products that still exist, any kitchen. */
+  findByIds(ids: Product['id'][]): Promise<Product[]> {
+    return this.productRepository.findByIds(ids);
+  }
+
   async listMine(ownerId: User['id']): Promise<Product[]> {
     const kitchen = await this.kitchensService.findMine(ownerId);
     return this.productRepository.findByKitchenId(kitchen.id);

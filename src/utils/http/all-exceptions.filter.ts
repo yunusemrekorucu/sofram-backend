@@ -14,6 +14,8 @@ type HttpErrorBody = {
   message?: string | string[];
   error?: string;
   errors?: ErrorTree;
+  /** Extra payload for the client, e.g. `{ quote }` on 409 orderTotalChanged. */
+  data?: unknown;
 };
 
 @Catch()
@@ -33,14 +35,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
-    const body: ApiEnvelope<null> = {
-      data: null,
+    const clientError = isHttp && statusCode < 500;
+    const body: ApiEnvelope<unknown> = {
+      data: (clientError ? this.bodyOf(exception).data : undefined) ?? null,
       status: false,
       statusCode,
-      message:
-        isHttp && statusCode < 500
-          ? this.messageOf(exception)
-          : 'Internal server error',
+      message: clientError
+        ? this.messageOf(exception)
+        : 'Internal server error',
     };
 
     const errors = isHttp ? this.bodyOf(exception).errors : undefined;

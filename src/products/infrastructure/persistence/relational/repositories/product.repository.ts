@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Kitchen } from '../../../../../kitchens/domain/kitchen';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { Product } from '../../../../domain/product';
@@ -28,6 +28,17 @@ export class ProductRelationalRepository implements ProductRepository {
     const entities = await this.productRepository.find({
       where: { kitchenId },
       order: { createdAt: 'DESC' },
+    });
+    return entities.map((entity) => ProductMapper.toDomain(entity));
+  }
+
+  async findByIds(ids: Product['id'][]): Promise<Product[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const entities = await this.productRepository.find({
+      where: { id: In(ids) },
     });
     return entities.map((entity) => ProductMapper.toDomain(entity));
   }

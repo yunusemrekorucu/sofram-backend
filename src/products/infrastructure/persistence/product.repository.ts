@@ -10,6 +10,9 @@ export abstract class ProductRepository {
   /** Newest first. */
   abstract findByKitchenId(kitchenId: Kitchen['id']): Promise<Product[]>;
 
+  /** Live (not deleted) products among `ids`, in no particular order. */
+  abstract findByIds(ids: Product['id'][]): Promise<Product[]>;
+
   abstract findOwned(
     kitchenId: Kitchen['id'],
     id: Product['id'],

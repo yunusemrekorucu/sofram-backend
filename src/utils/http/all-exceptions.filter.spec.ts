@@ -1,5 +1,6 @@
 import {
   ArgumentsHost,
+  ConflictException,
   HttpStatus,
   Logger,
   NotFoundException,
@@ -63,6 +64,26 @@ describe('AllExceptionsFilter', () => {
       status: false,
       statusCode: 404,
       message: 'notFound',
+    });
+  });
+
+  it('should pass a client error’s `data` through (409 orderTotalChanged)', () => {
+    const { host, json } = hostCapturing();
+
+    new AllExceptionsFilter().catch(
+      new ConflictException({
+        status: HttpStatus.CONFLICT,
+        error: 'orderTotalChanged',
+        data: { quote: { totalKurus: 33600 } },
+      }),
+      host,
+    );
+
+    expect(json).toHaveBeenCalledWith({
+      data: { quote: { totalKurus: 33600 } },
+      status: false,
+      statusCode: 409,
+      message: 'orderTotalChanged',
     });
   });
 
