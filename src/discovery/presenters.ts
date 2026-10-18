@@ -120,6 +120,7 @@ export function kitchenDetail(
     kitchenCard(kitchen, distanceKm, ctx),
     {
       description: kitchen.description,
+      minOrderKurus: kitchen.minOrderKurus,
       hours: kitchen.hours,
       deliveryTiers: kitchen.deliveryTiers,
       sections,

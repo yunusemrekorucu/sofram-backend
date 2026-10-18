@@ -95,6 +95,16 @@ export class CreateKitchenDto {
   @Min(0)
   freeDeliveryMinKurus?: number | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'kuruş, 0–100000; ara toplam altındaysa sipariş verilemez',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000)
+  minOrderKurus?: number | null;
+
   @ApiProperty({ type: () => KitchenHourDto, isArray: true })
   @IsArray()
   @ArrayMaxSize(21)

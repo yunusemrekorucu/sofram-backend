@@ -124,6 +124,9 @@ export class KitchenDetail extends KitchenCard {
   @ApiProperty({ type: String, nullable: true })
   description: string | null;
 
+  @ApiProperty({ type: Number, nullable: true, description: 'kuruş' })
+  minOrderKurus: number | null;
+
   @ApiProperty({ type: () => KitchenHourDto, isArray: true })
   hours: KitchenHour[];
 

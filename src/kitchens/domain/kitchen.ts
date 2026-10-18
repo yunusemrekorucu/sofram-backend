@@ -53,6 +53,9 @@ export class Kitchen {
   @ApiProperty({ type: Number, nullable: true, description: 'kuruş' })
   freeDeliveryMinKurus: number | null;
 
+  @ApiProperty({ type: Number, nullable: true, description: 'kuruş' })
+  minOrderKurus: number | null;
+
   @ApiProperty({ type: () => KitchenHourDto, isArray: true })
   hours: KitchenHour[];
 

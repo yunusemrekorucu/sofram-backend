@@ -9,6 +9,8 @@ export abstract class KitchenRepository {
 
   abstract findByOwnerId(ownerId: User['id']): Promise<NullableType<Kitchen>>;
 
+  abstract findById(id: Kitchen['id']): Promise<NullableType<Kitchen>>;
+
   abstract update(
     id: Kitchen['id'],
     payload: Partial<Kitchen>,

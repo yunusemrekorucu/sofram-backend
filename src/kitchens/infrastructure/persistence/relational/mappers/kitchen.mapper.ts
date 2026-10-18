@@ -20,6 +20,7 @@ export class KitchenMapper {
       deliveryTiers: raw.deliveryTiers,
       deliveryRadiusKm: raw.deliveryRadiusKm,
       freeDeliveryMinKurus: raw.freeDeliveryMinKurus,
+      minOrderKurus: raw.minOrderKurus,
       hours: raw.hours,
       isPaused: raw.isPaused,
       isVerified: raw.isVerified,

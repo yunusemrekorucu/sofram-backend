@@ -44,6 +44,11 @@ export class KitchensService {
     return this.kitchenRepository.findByOwnerId(ownerId);
   }
 
+  /** A live (not deleted) kitchen by id; customers' order quotes start here. */
+  findById(id: Kitchen['id']): Promise<Kitchen | null> {
+    return this.kitchenRepository.findById(id);
+  }
+
   findMine(ownerId: User['id']): Promise<Kitchen> {
     return orNotFound(this.kitchenRepository.findByOwnerId(ownerId));
   }
@@ -72,6 +77,7 @@ export class KitchensService {
         deliveryEnabled: dto.deliveryEnabled,
         deliveryTiers: dto.deliveryTiers,
         freeDeliveryMinKurus: dto.freeDeliveryMinKurus ?? null,
+        minOrderKurus: dto.minOrderKurus ?? null,
         hours: dto.hours,
         isPaused: false,
         isVerified: false,

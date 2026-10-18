@@ -90,6 +90,7 @@ describe('KitchensService.create', () => {
       description: null,
       coverPhoto: null,
       freeDeliveryMinKurus: null,
+      minOrderKurus: null,
       isPaused: false,
       isVerified: false,
       deliveryRadiusKm: 5,
@@ -145,6 +146,18 @@ describe('KitchensService.update', () => {
       deliveryRadiusKm: null,
       deliveryTiers: dto().deliveryTiers,
     });
+  });
+
+  it('should set and clear the minimum order amount', async () => {
+    const { service } = build();
+    await service.create(7, dto({ minOrderKurus: 15000 }));
+
+    expect((await service.update(7, { isPaused: true })).minOrderKurus).toBe(
+      15000,
+    );
+    expect(
+      (await service.update(7, { minOrderKurus: null })).minOrderKurus,
+    ).toBeNull();
   });
 
   it('should re-copy the address when addressId changes', async () => {

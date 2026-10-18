@@ -41,6 +41,7 @@ const kitchen = Object.assign(new Kitchen(), {
   ],
   deliveryRadiusKm: 6,
   freeDeliveryMinKurus: 30000,
+  minOrderKurus: 15000,
   hours: [{ dayOfWeek: 1, opensAt: '11:00', closesAt: '20:00' }],
   isPaused: false,
   isVerified: false,
@@ -137,6 +138,7 @@ describe('kitchenDetail', () => {
     expect(detail.sections[0].products.map((p) => p.id)).toEqual(['p1', 'p3']);
     expect(detail).toMatchObject({
       description: 'Ev yemekleri',
+      minOrderKurus: 15000,
       hours: kitchen.hours,
     });
   });

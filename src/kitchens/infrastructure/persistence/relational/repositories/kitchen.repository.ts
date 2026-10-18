@@ -31,6 +31,11 @@ export class KitchenRelationalRepository implements KitchenRepository {
     return entity ? KitchenMapper.toDomain(entity) : null;
   }
 
+  async findById(id: Kitchen['id']): Promise<NullableType<Kitchen>> {
+    const entity = await this.kitchenRepository.findOne({ where: { id } });
+    return entity ? KitchenMapper.toDomain(entity) : null;
+  }
+
   async update(id: Kitchen['id'], payload: Partial<Kitchen>): Promise<Kitchen> {
     await this.kitchenRepository.save(
       this.kitchenRepository.create({

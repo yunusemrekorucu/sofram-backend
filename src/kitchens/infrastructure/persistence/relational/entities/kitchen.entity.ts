@@ -72,6 +72,9 @@ export class KitchenEntity extends EntityRelationalHelper {
   @Column({ type: Number, nullable: true })
   freeDeliveryMinKurus: number | null;
 
+  @Column({ type: Number, nullable: true })
+  minOrderKurus: number | null;
+
   @Column({ type: 'jsonb', default: () => "'[]'" })
   hours: KitchenHour[];
 
