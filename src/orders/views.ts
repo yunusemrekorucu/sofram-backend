@@ -294,3 +294,130 @@ export class CustomerOrderDetail extends OrderTimeline {
   @ApiProperty({ type: () => OrderPaymentView, nullable: true })
   payment: OrderPaymentView | null;
 }
+
+/** GET /kitchens/me/orders — enough to answer a new order from the list. */
+export class CookOrderCard {
+  @ApiProperty({ type: String })
+  id: string;
+
+  @ApiProperty({ type: String })
+  code: string;
+
+  @ApiProperty({ enum: OrderStatus })
+  status: OrderStatus;
+
+  @ApiProperty({ enum: Fulfillment })
+  fulfillment: Fulfillment;
+
+  @ApiProperty({ type: Number, nullable: true })
+  distanceKm: number | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'Ad S.' })
+  customerName: string | null;
+
+  @ApiProperty({ type: () => OrderItemView, isArray: true })
+  items: OrderItemView[];
+
+  @ApiProperty({ type: String, nullable: true })
+  note: string | null;
+
+  @ApiProperty({ type: Number, description: 'kuruş' })
+  totalKurus: number;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  expiresAt: Date;
+
+  @ApiProperty({ type: Date, nullable: true })
+  estimatedReadyAt: Date | null;
+}
+
+/** GET /kitchens/me/orders/:id — never the pickup code or a phone number. */
+export class CookOrderDetail extends OrderTimeline {
+  @ApiProperty({ type: String })
+  id: string;
+
+  @ApiProperty({ type: String })
+  code: string;
+
+  @ApiProperty({ enum: OrderStatus })
+  status: OrderStatus;
+
+  @ApiProperty({ enum: Fulfillment })
+  fulfillment: Fulfillment;
+
+  @ApiProperty({ type: Number, nullable: true })
+  distanceKm: number | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'Ad S.' })
+  customerName: string | null;
+
+  @ApiProperty({ type: () => DeliveryAddressView, nullable: true })
+  deliveryAddress: DeliveryAddressView | null;
+
+  @ApiProperty({ type: () => OrderItemView, isArray: true })
+  items: OrderItemView[];
+
+  @ApiProperty({ type: String, nullable: true })
+  note: string | null;
+
+  @ApiProperty({ type: Number, description: 'kuruş' })
+  subtotalKurus: number;
+
+  @ApiProperty({ type: Number, description: 'kuruş' })
+  deliveryFeeKurus: number;
+
+  @ApiProperty({ type: Number, description: 'kuruş' })
+  serviceFeeKurus: number;
+
+  @ApiProperty({ type: Number, description: 'kuruş' })
+  totalKurus: number;
+
+  @ApiProperty({ enum: OrderReason, nullable: true })
+  reason: OrderReason | null;
+
+  @ApiProperty({ enum: CancelledBy, nullable: true })
+  cancelledBy: CancelledBy | null;
+}
+
+export class CookTabCounts {
+  @ApiProperty({ type: Number })
+  new: number;
+
+  @ApiProperty({ type: Number })
+  preparing: number;
+
+  @ApiProperty({ type: Number })
+  ready: number;
+}
+
+export class CompletedTotalsView {
+  @ApiProperty({ type: Number })
+  orders: number;
+
+  @ApiProperty({ type: Number, description: 'Ara toplam, kuruş' })
+  revenueKurus: number;
+}
+
+/** GET /kitchens/me/orders/summary */
+export class CookOrderSummary {
+  @ApiProperty({ type: () => CookTabCounts })
+  counts: CookTabCounts;
+
+  @ApiProperty({
+    type: () => CompletedTotalsView,
+    description: 'Bugün (İstanbul) tamamlananlar',
+  })
+  today: CompletedTotalsView;
+
+  @ApiProperty({
+    type: () => CompletedTotalsView,
+    description: 'Pazartesiden beri tamamlananlar',
+  })
+  week: CompletedTotalsView;
+
+  @ApiProperty({ type: Boolean })
+  hasEverCompleted: boolean;
+}

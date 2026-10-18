@@ -2,6 +2,8 @@ import { PaymentStatus } from '../payments/domain/payment';
 import { anOrder } from './order.fixture';
 import { Fulfillment, OrderStatus } from './order.enums';
 import {
+  cookOrderCard,
+  cookOrderDetail,
   customerOrderCard,
   customerOrderDetail,
   kitchenAddressFor,
@@ -102,5 +104,40 @@ describe('customerOrderDetail', () => {
     expect(detail).not.toHaveProperty('customerId');
     expect(detail.kitchen).not.toHaveProperty('ownerId');
     expect(detail.payment).toBeNull();
+  });
+});
+
+describe('cook views', () => {
+  it('should name the customer briefly and keep the pickup code out', () => {
+    for (const view of [cookOrderCard(anOrder()), cookOrderDetail(anOrder())]) {
+      expect(view).toMatchObject({
+        customerName: 'Deniz İ.',
+        items: [{ name: 'Mantı', note: 'Az acılı' }],
+        note: 'Kapıda arayın',
+      });
+      expect(view).not.toHaveProperty('pickupCode');
+      expect(view).not.toHaveProperty('customerId');
+      expect(view).not.toHaveProperty('payment');
+    }
+  });
+
+  it('should show the delivery address to the cook', () => {
+    const deliveryAddress = {
+      fullAddress: 'Osmanağa Mh. No:30',
+      district: 'Kadıköy',
+      neighborhood: 'Osmanağa',
+      buildingNo: '30',
+      floor: '2',
+      apartmentNo: '4',
+      directions: null,
+      latitude: 40.99,
+      longitude: 29.03,
+    };
+
+    expect(
+      cookOrderDetail(
+        anOrder({ fulfillment: Fulfillment.delivery, deliveryAddress }),
+      ).deliveryAddress,
+    ).toEqual(deliveryAddress);
   });
 });

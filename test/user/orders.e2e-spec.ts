@@ -458,4 +458,288 @@ describe('Orders', () => {
         });
     });
   });
+
+  const placed = async (body: Record<string, unknown>) =>
+    (await placeOrder(body).expect(201)).body.data;
+
+  const step = (id: string, action: string, body: object = {}) =>
+    post(`/kitchens/me/orders/${id}/${action}`, cook).send(body);
+
+  let orderB: string;
+  let orderC: string;
+  let orderD: string;
+  let orderE: string;
+  let orderG: string;
+
+  describe('the cook’s side', () => {
+    it('should show a new order to the cook without the pickup code or phone', async () => {
+      const order = await placed({
+        kitchenId,
+        fulfillment: 'pickup',
+        items: [{ productId: kofteId, quantity: 1 }],
+        expectedTotalKurus: 9450,
+      });
+      orderB = order.id;
+
+      await get('/kitchens/me/orders?tab=new', cook)
+        .expect(200)
+        .expect(({ body }) => {
+          const card = body.data.data.find(
+            (o: { id: string }) => o.id === orderB,
+          );
+          expect(card).toMatchObject({
+            code: order.code,
+            customerName: 'Deniz A.',
+            items: [{ name: 'Mercimek köftesi', quantity: 1 }],
+            totalKurus: 9450,
+          });
+          expect(card).not.toHaveProperty('pickupCode');
+        });
+
+      await get(`/kitchens/me/orders/${orderB}`, cook)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data).toMatchObject({
+            customerName: 'Deniz A.',
+            subtotalKurus: 9000,
+            serviceFeeKurus: 450,
+          });
+          expect(body.data).not.toHaveProperty('pickupCode');
+          expect(JSON.stringify(body.data)).not.toContain(customerPhone);
+        });
+    });
+
+    it('should 404 the cook endpoints for a user without a kitchen', () =>
+      get('/kitchens/me/orders?tab=new', customer).expect(404));
+
+    it('should keep another cook out of the order', async () => {
+      const otherCook = await phoneLogin(uniquePhone('+90563'));
+      await openKitchen(otherCook, northOf(HOME, 2));
+
+      await get(`/kitchens/me/orders/${orderB}`, otherCook).expect(404);
+      await post(`/kitchens/me/orders/${orderB}/accept`, otherCook).expect(404);
+    });
+
+    it('should require a known reason to reject', () =>
+      step(orderB, 'reject', { reason: 'because' }).expect(422));
+
+    it('should reject with a reason and give portions and money back', async () => {
+      await step(orderB, 'reject', { reason: 'too_busy' })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data).toMatchObject({
+            status: 'rejected',
+            reason: 'too_busy',
+          });
+        });
+
+      expect(await portionsOf(kofteId)).toBe(5);
+
+      await get(`/orders/${orderB}`, customer)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data).toMatchObject({
+            status: 'rejected',
+            reason: 'too_busy',
+            payment: { status: 'refunded' },
+          });
+        });
+    });
+
+    it('should walk a pickup order to completion with the pickup code', async () => {
+      const order = await placed({
+        kitchenId,
+        fulfillment: 'pickup',
+        items: [{ productId: mantiId, quantity: 1 }],
+        expectedTotalKurus: 14700,
+      });
+      orderD = order.id;
+
+      const { body: accepted } = await step(orderD, 'accept').expect(200);
+      expect(accepted.data.status).toBe('accepted');
+      expect(
+        Date.parse(accepted.data.estimatedReadyAt) -
+          Date.parse(accepted.data.acceptedAt),
+      ).toBe(45 * 60_000);
+
+      await get(`/orders/${orderD}`, customer)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.kitchenAddress).toEqual({
+            fullAddress: 'Deneme Mh. Test Sk. No:1',
+            latitude: HOME.latitude,
+            longitude: HOME.longitude,
+          });
+        });
+
+      await post(`/orders/${orderD}/cancel`, customer).expect(409);
+      await step(orderD, 'start').expect(200);
+      await step(orderD, 'ready').expect(200);
+      await step(orderD, 'dispatch').expect(409);
+
+      await step(orderD, 'complete')
+        .expect(422)
+        .expect(({ body }) => {
+          expect(body.errors).toEqual([
+            { field: 'pickupCode', message: 'required' },
+          ]);
+        });
+
+      const wrong = order.pickupCode === '0000' ? '1111' : '0000';
+      await step(orderD, 'complete', { pickupCode: wrong })
+        .expect(422)
+        .expect(({ body }) => {
+          expect(body.errors).toEqual([
+            { field: 'pickupCode', message: 'invalid' },
+          ]);
+        });
+
+      await step(orderD, 'complete', { pickupCode: order.pickupCode })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.status).toBe('completed');
+        });
+
+      await get(`/orders/${orderD}`, customer)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.kitchenAddress).toBeNull();
+          expect(body.data.completedAt).toEqual(expect.any(String));
+        });
+    });
+
+    it('should walk a delivery order through dispatch to completion', async () => {
+      const order = await placed({
+        kitchenId,
+        fulfillment: 'delivery',
+        addressId: nearId,
+        items: [{ productId: mantiId, quantity: 1 }],
+        expectedTotalKurus: 16200,
+      });
+      orderC = order.id;
+      expect(order).toMatchObject({
+        pickupCode: null,
+        deliveryFeeKurus: 1500,
+        deliveryAddress: { fullAddress: 'Teslimat Sk. No:5' },
+      });
+
+      await step(orderC, 'accept').expect(200);
+
+      await get(`/orders/${orderC}`, customer)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.kitchenAddress).toBeNull();
+        });
+
+      await get(`/kitchens/me/orders/${orderC}`, cook)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.deliveryAddress).toMatchObject({
+            fullAddress: 'Teslimat Sk. No:5',
+          });
+        });
+
+      for (const action of ['start', 'ready', 'dispatch']) {
+        await step(orderC, action).expect(200);
+      }
+
+      await step(orderC, 'complete')
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.status).toBe('completed');
+          expect(body.data.onTheWayAt).toEqual(expect.any(String));
+        });
+    });
+
+    it('should let the cook cancel an accepted order with a reason', async () => {
+      const order = await placed({
+        kitchenId,
+        fulfillment: 'delivery',
+        addressId: nearId,
+        items: [{ productId: kofteId, quantity: 1 }],
+        expectedTotalKurus: 10950,
+      });
+      orderE = order.id;
+
+      await step(orderE, 'accept').expect(200);
+      expect(await portionsOf(kofteId)).toBe(4);
+
+      await step(orderE, 'cancel').expect(422);
+      await step(orderE, 'cancel', { reason: 'out_of_ingredients' })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data).toMatchObject({
+            status: 'cancelled',
+            cancelledBy: 'cook',
+            reason: 'out_of_ingredients',
+          });
+        });
+
+      expect(await portionsOf(kofteId)).toBe(5);
+
+      await get(`/orders/${orderE}`, customer)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.payment).toEqual({ status: 'refunded' });
+        });
+    });
+
+    it('should close an order whose product was deleted meanwhile', async () => {
+      const sutlacId = await addProduct(cook, {
+        categoryId: await categoryId(cook, 'dessert'),
+        name: 'Fırın sütlaç',
+        priceKurus: 6500,
+        saleType: 'daily_portion',
+        portionsAvailable: 3,
+      });
+      const order = await placed({
+        kitchenId,
+        fulfillment: 'pickup',
+        items: [{ productId: sutlacId, quantity: 1 }],
+        expectedTotalKurus: 6825,
+      });
+      orderG = order.id;
+
+      await request(app)
+        .delete(`/api/v1/kitchens/me/products/${sutlacId}`)
+        .auth(cook, { type: 'bearer' })
+        .expect(204);
+
+      await step(orderG, 'reject', { reason: 'out_of_ingredients' })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data.status).toBe('rejected');
+          expect(body.data.items[0].name).toBe('Fırın sütlaç');
+        });
+    });
+
+    it('should sum up today and the week', () =>
+      get('/kitchens/me/orders/summary', cook)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.data).toEqual({
+            counts: { new: 0, preparing: 0, ready: 0 },
+            today: { orders: 2, revenueKurus: 28000 },
+            week: { orders: 2, revenueKurus: 28000 },
+            hasEverCompleted: true,
+          });
+        }));
+
+    it('should list today’s closed orders under done, newest first', () =>
+      get('/kitchens/me/orders?tab=done', cook)
+        .expect(200)
+        .expect(({ body }) => {
+          // The two "closing edge cases" orders sit between orderB and orderA.
+          const done = ids(body);
+          expect(done).toHaveLength(8);
+          expect(done.slice(0, 5)).toEqual([
+            orderG,
+            orderE,
+            orderC,
+            orderD,
+            orderB,
+          ]);
+          expect(done[7]).toBe(orderA);
+        }));
+  });
 });

@@ -4,6 +4,8 @@ import { OrderItem } from './domain/order-item';
 import { OrderQuote, estimatedMinutesFor } from './order-pricing';
 import { Fulfillment, OrderStatus } from './order.enums';
 import {
+  CookOrderCard,
+  CookOrderDetail,
   CustomerOrderCard,
   CustomerOrderDetail,
   KitchenAddressView,
@@ -132,5 +134,42 @@ export function customerOrderDetail(
     reason: order.reason,
     cancelledBy: order.cancelledBy,
     payment: paymentStatus ? { status: paymentStatus } : null,
+  });
+}
+
+export function cookOrderCard(order: Order): CookOrderCard {
+  return Object.assign(new CookOrderCard(), {
+    id: order.id,
+    code: order.code,
+    status: order.status,
+    fulfillment: order.fulfillment,
+    distanceKm: order.distanceKm,
+    customerName: shortName(order.customer),
+    items: order.items.map(itemView),
+    note: order.note,
+    totalKurus: order.totalKurus,
+    createdAt: order.createdAt,
+    expiresAt: order.expiresAt,
+    estimatedReadyAt: order.estimatedReadyAt,
+  });
+}
+
+export function cookOrderDetail(order: Order): CookOrderDetail {
+  return Object.assign(new CookOrderDetail(), timeline(order), {
+    id: order.id,
+    code: order.code,
+    status: order.status,
+    fulfillment: order.fulfillment,
+    distanceKm: order.distanceKm,
+    customerName: shortName(order.customer),
+    deliveryAddress: order.deliveryAddress,
+    items: order.items.map(itemView),
+    note: order.note,
+    subtotalKurus: order.subtotalKurus,
+    deliveryFeeKurus: order.deliveryFeeKurus,
+    serviceFeeKurus: order.serviceFeeKurus,
+    totalKurus: order.totalKurus,
+    reason: order.reason,
+    cancelledBy: order.cancelledBy,
   });
 }

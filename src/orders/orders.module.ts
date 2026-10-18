@@ -6,6 +6,8 @@ import { AddressesModule } from '../addresses/addresses.module';
 import { KitchensModule } from '../kitchens/kitchens.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { ProductsModule } from '../products/products.module';
+import { CookOrdersController } from './cook-orders.controller';
+import { CookOrdersService } from './cook-orders.service';
 import { RelationalOrderPersistenceModule } from './infrastructure/persistence/relational/relational-persistence.module';
 import { OrderLifecycleService } from './order-lifecycle.service';
 import { OrdersController } from './orders.controller';
@@ -20,8 +22,8 @@ import { OrdersService } from './orders.service';
     ProductsModule,
     AddressesModule,
   ],
-  controllers: [OrdersController],
-  providers: [OrdersService, OrderLifecycleService],
+  controllers: [OrdersController, CookOrdersController],
+  providers: [OrdersService, CookOrdersService, OrderLifecycleService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
