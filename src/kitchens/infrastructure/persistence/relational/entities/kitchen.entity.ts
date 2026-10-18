@@ -84,6 +84,13 @@ export class KitchenEntity extends EntityRelationalHelper {
   @Column({ type: Boolean, default: false })
   isVerified: boolean;
 
+  // Derived (ratingSummary) in the review transactions; never written by PATCH.
+  @Column({ type: 'double precision', nullable: true })
+  ratingAvg: number | null;
+
+  @Column({ type: Number, default: 0 })
+  ratingCount: number;
+
   // Derived (foldTurkish) for search.
   @Column({ type: String })
   searchText: string;

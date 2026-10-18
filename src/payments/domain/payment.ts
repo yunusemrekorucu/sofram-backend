@@ -19,6 +19,9 @@ export class Payment {
 
   amountKurus: number;
 
+  /** Given back so far; a full refund sets it to amountKurus, partial refunds add up to it. */
+  refundedKurus: number;
+
   status: PaymentStatus;
 
   paidAt: Date | null;
@@ -30,4 +33,7 @@ export class Payment {
   updatedAt: Date;
 }
 
-export type NewPayment = Omit<Payment, 'id' | 'createdAt' | 'updatedAt'>;
+export type NewPayment = Omit<
+  Payment,
+  'id' | 'refundedKurus' | 'createdAt' | 'updatedAt'
+>;

@@ -65,6 +65,16 @@ export class Kitchen {
   @ApiProperty({ type: Boolean })
   isVerified: boolean;
 
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'Tek ondalık; değerlendirme yoksa null',
+  })
+  ratingAvg: number | null;
+
+  @ApiProperty({ type: Number })
+  ratingCount: number;
+
   @Exclude({ toPlainOnly: true })
   searchText: string;
 

@@ -90,6 +90,11 @@ export class Order {
 
   reason: OrderReason | null;
 
+  /** Chat read markers: the side's unread messages are the other side's after it. */
+  customerLastReadAt: Date | null;
+
+  cookLastReadAt: Date | null;
+
   /** In cart order. */
   items: OrderItem[];
 
@@ -107,7 +112,15 @@ export type NewOrderItem = Omit<OrderItem, 'id'>;
 /** What OrderRepository.place inserts; the repository picks the code. */
 export type NewOrder = Omit<
   Order,
-  'id' | 'code' | 'items' | 'kitchen' | 'customer' | 'createdAt' | 'updatedAt'
+  | 'id'
+  | 'code'
+  | 'items'
+  | 'kitchen'
+  | 'customer'
+  | 'customerLastReadAt'
+  | 'cookLastReadAt'
+  | 'createdAt'
+  | 'updatedAt'
 > & { items: NewOrderItem[] };
 
 /** What a status change may write. */

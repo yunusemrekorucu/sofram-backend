@@ -16,7 +16,10 @@ export class KitchenRelationalRepository implements KitchenRepository {
   ) {}
 
   async create(
-    data: Omit<Kitchen, 'id' | 'createdAt' | 'updatedAt'>,
+    data: Omit<
+      Kitchen,
+      'id' | 'createdAt' | 'updatedAt' | 'ratingAvg' | 'ratingCount'
+    >,
   ): Promise<Kitchen> {
     const entity = await this.kitchenRepository.save(
       this.kitchenRepository.create(KitchenMapper.toPersistence(data)),
@@ -40,6 +43,9 @@ export class KitchenRelationalRepository implements KitchenRepository {
     await this.kitchenRepository.save(
       this.kitchenRepository.create({
         ...KitchenMapper.toPersistence(payload),
+        // The review transactions own these; a stale copy must not overwrite them.
+        ratingAvg: undefined,
+        ratingCount: undefined,
         id,
       }),
     );

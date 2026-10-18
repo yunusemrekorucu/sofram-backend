@@ -36,6 +36,8 @@ export class OrderMapper {
       closedAt: raw.closedAt,
       cancelledBy: raw.cancelledBy,
       reason: raw.reason,
+      customerLastReadAt: raw.customerLastReadAt,
+      cookLastReadAt: raw.cookLastReadAt,
       items: (raw.items ?? [])
         .map((item) => OrderItemMapper.toDomain(item))
         .sort((a, b) => a.position - b.position),

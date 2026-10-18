@@ -24,6 +24,8 @@ export class KitchenMapper {
       hours: raw.hours,
       isPaused: raw.isPaused,
       isVerified: raw.isVerified,
+      ratingAvg: raw.ratingAvg,
+      ratingCount: raw.ratingCount,
       searchText: raw.searchText,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,

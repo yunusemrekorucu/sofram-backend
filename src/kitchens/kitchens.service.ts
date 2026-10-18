@@ -18,10 +18,19 @@ import { UpdateKitchenDto } from './dto/update-kitchen.dto';
 import { KitchenRepository } from './infrastructure/persistence/kitchen.repository';
 import { deliveryRadiusOf, kitchenRuleErrors } from './kitchen-rules';
 
-/** What the cook controls; deliveryRadiusKm and searchText derive from it. */
+/**
+ * What the cook controls; deliveryRadiusKm and searchText derive from it.
+ * The rating is the reviews' (ReviewRepository recomputes it).
+ */
 type KitchenFields = Omit<
   Kitchen,
-  'id' | 'createdAt' | 'updatedAt' | 'deliveryRadiusKm' | 'searchText'
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'deliveryRadiusKm'
+  | 'searchText'
+  | 'ratingAvg'
+  | 'ratingCount'
 >;
 
 const addressFields = (address: Address) => ({

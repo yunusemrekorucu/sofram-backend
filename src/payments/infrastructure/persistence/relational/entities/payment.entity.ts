@@ -35,6 +35,9 @@ export class PaymentEntity extends EntityRelationalHelper {
   @Column({ type: Number })
   amountKurus: number;
 
+  @Column({ type: Number, default: 0 })
+  refundedKurus: number;
+
   @Column({ type: String })
   status: PaymentStatus;
 

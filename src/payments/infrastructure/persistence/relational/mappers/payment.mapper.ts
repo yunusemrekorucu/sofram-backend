@@ -9,6 +9,7 @@ export class PaymentMapper {
       provider: raw.provider,
       providerRef: raw.providerRef,
       amountKurus: raw.amountKurus,
+      refundedKurus: raw.refundedKurus,
       status: raw.status,
       paidAt: raw.paidAt,
       refundedAt: raw.refundedAt,

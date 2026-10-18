@@ -107,6 +107,12 @@ export class OrderEntity extends EntityRelationalHelper {
   @Column({ type: String, nullable: true })
   reason: OrderReason | null;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  customerLastReadAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  cookLastReadAt: Date | null;
+
   @OneToMany(() => OrderItemEntity, (item) => item.order)
   items?: OrderItemEntity[];
 

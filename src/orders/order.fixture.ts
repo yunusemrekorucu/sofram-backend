@@ -48,6 +48,8 @@ export const anOrder = (overrides: Partial<Order> = {}): Order =>
     closedAt: null,
     cancelledBy: null,
     reason: null,
+    customerLastReadAt: null,
+    cookLastReadAt: null,
     items: [anItem()],
     kitchen: {
       id: 'k1',
