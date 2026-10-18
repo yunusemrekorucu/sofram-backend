@@ -28,7 +28,9 @@ export class CreateOrderDto extends OrderTargetDto {
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(20)
-  @ArrayUnique((item: CreateOrderItemDto) => item.productId)
+  @ArrayUnique((item: CreateOrderItemDto) => item.productId, {
+    message: 'mustBeUnique',
+  })
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];

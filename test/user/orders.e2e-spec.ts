@@ -11,6 +11,7 @@ import {
   phoneLogin,
   randomSpot,
   setName,
+  testDatabase,
   uniquePhone,
 } from '../utils/orders';
 
@@ -212,6 +213,22 @@ describe('Orders', () => {
             expect.objectContaining({ field: 'items.0.quantity' }),
           ]);
         }));
+
+    it('should 422 the same product on two lines', () =>
+      quote(
+        cart({
+          items: [
+            { productId: mantiId, quantity: 1 },
+            { productId: mantiId, quantity: 2 },
+          ],
+        }),
+      )
+        .expect(422)
+        .expect(({ body }) => {
+          expect(body.errors).toEqual([
+            { field: 'items', message: 'mustBeUnique' },
+          ]);
+        }));
   });
 
   let orderA: string;
@@ -297,6 +314,23 @@ describe('Orders', () => {
           ]);
         }));
 
+    it('should 422 the same product on two lines', () =>
+      placeOrder({
+        ...cart({
+          items: [
+            { productId: mantiId, quantity: 1 },
+            { productId: mantiId, quantity: 2 },
+          ],
+        }),
+        expectedTotalKurus: 33600,
+      })
+        .expect(422)
+        .expect(({ body }) => {
+          expect(body.errors).toEqual([
+            { field: 'items', message: 'mustBeUnique' },
+          ]);
+        }));
+
     it('should list the order as active, not past', async () => {
       await get('/orders?scope=active', customer)
         .expect(200)
@@ -343,10 +377,84 @@ describe('Orders', () => {
           expect(body.message).toBe('orderStatusConflict');
         });
 
+      // The refused second cancel did not restock again.
+      expect(await portionsOf(kofteId)).toBe(5);
+
       await get('/orders?scope=past', customer)
         .expect(200)
         .expect(({ body }) => {
           expect(ids(body)).toContain(orderA);
+        });
+    });
+  });
+
+  describe('closing edge cases', () => {
+    const total = 9450; // 9000 + 5%
+
+    it('should cancel and refund when the restocked product was deleted', async () => {
+      const gone = await addProduct(cook, {
+        categoryId: await categoryId(cook, 'main-dish'),
+        name: 'Kalkan çorba',
+        priceKurus: 9000,
+        saleType: 'daily_portion',
+        portionsAvailable: 3,
+      });
+
+      const { body } = await placeOrder({
+        ...cart(),
+        items: [{ productId: gone, quantity: 1 }],
+        expectedTotalKurus: total,
+      }).expect(201);
+
+      await request(app)
+        .delete(`/api/v1/kitchens/me/products/${gone}`)
+        .auth(cook, { type: 'bearer' })
+        .expect(204);
+
+      await post(`/orders/${body.data.id}/cancel`, customer)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.data).toMatchObject({
+            status: 'cancelled',
+            payment: { status: 'refunded' },
+          });
+        });
+    });
+
+    it('should expire an overdue order before cancelling it, restocking once', async () => {
+      const before = await portionsOf(kofteId);
+      const { body } = await placeOrder({
+        ...cart(),
+        items: [{ productId: kofteId, quantity: 1 }],
+        expectedTotalKurus: total,
+      }).expect(201);
+      const id = body.data.id;
+      expect(await portionsOf(kofteId)).toBe(before - 1);
+
+      const db = testDatabase();
+      await db.initialize();
+      try {
+        await db.query(
+          `UPDATE "order" SET "expiresAt" = now() - interval '1 minute' WHERE id = $1`,
+          [id],
+        );
+      } finally {
+        await db.destroy();
+      }
+
+      await post(`/orders/${id}/cancel`, customer)
+        .expect(409)
+        .expect((res) => {
+          expect(res.body.message).toBe('orderStatusConflict');
+        });
+
+      expect(await portionsOf(kofteId)).toBe(before);
+
+      await get(`/orders/${id}`, customer)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.data.status).toBe('expired');
+          expect(res.body.data.payment.status).toBe('refunded');
         });
     });
   });

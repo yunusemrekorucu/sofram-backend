@@ -51,7 +51,9 @@ export class QuoteOrderDto extends OrderTargetDto {
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(20)
-  @ArrayUnique((item: OrderItemInputDto) => item.productId)
+  @ArrayUnique((item: OrderItemInputDto) => item.productId, {
+    message: 'mustBeUnique',
+  })
   @ValidateNested({ each: true })
   @Type(() => OrderItemInputDto)
   items: OrderItemInputDto[];
