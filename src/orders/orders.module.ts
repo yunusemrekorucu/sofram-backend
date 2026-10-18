@@ -30,6 +30,6 @@ import { OrdersService } from './orders.service';
     OrderLifecycleService,
     OrdersExpiryTask,
   ],
-  exports: [OrdersService],
+  exports: [OrdersService, RelationalOrderPersistenceModule],
 })
 export class OrdersModule {}

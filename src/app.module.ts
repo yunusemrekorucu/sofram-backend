@@ -49,8 +49,11 @@ import { OrdersModule } from './orders/orders.module';
 
 import { PaymentsModule } from './payments/payments.module';
 
+import { ReviewsModule } from './reviews/reviews.module';
+
 @Module({
   imports: [
+    ReviewsModule,
     PaymentsModule,
     OrdersModule,
     DiscoveryModule,

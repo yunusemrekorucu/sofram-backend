@@ -3,7 +3,8 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { CookTab, OrderScope } from '../order.enums';
 
-class PageQueryDto {
+/** page ≤ 1000, limit ≤ 50 (Faz 2 §8); shared by every infinite list. */
+export class PageQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

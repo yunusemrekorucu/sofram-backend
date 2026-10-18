@@ -1,6 +1,7 @@
+import { randomUUID } from 'crypto';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
-import { APP_URL } from './constants';
+import { ADMIN_EMAIL, ADMIN_PASSWORD, APP_URL } from './constants';
 
 export type Spot = { latitude: number; longitude: number };
 
@@ -104,26 +105,112 @@ export async function categoryId(token: string, slug: string): Promise<string> {
   return body.data.find((c: { slug: string }) => c.slug === slug).id;
 }
 
+/** Uploads a 1×1 PNG and returns the file id. */
+export async function uploadPhoto(token: string): Promise<string> {
+  const { body } = await request(APP_URL)
+    .post('/api/v1/files/upload')
+    .auth(token, { type: 'bearer' })
+    .attach('file', PNG, 'photo.png')
+    .expect(201);
+  return body.data.file.id;
+}
+
 export async function addProduct(
   token: string,
   product: Record<string, unknown>,
 ): Promise<string> {
-  const upload = await request(APP_URL)
-    .post('/api/v1/files/upload')
-    .auth(token, { type: 'bearer' })
-    .attach('file', PNG, 'dish.png')
-    .expect(201);
   const { body } = await request(APP_URL)
     .post('/api/v1/kitchens/me/products')
     .auth(token, { type: 'bearer' })
     .send({
       allergens: [],
       dietTags: [],
-      photoIds: [upload.body.data.file.id],
+      photoIds: [await uploadPhoto(token)],
       ...product,
     })
     .expect(201);
   return body.data.id;
+}
+
+export async function adminLogin(): Promise<string> {
+  const { body } = await request(APP_URL)
+    .post('/api/v1/auth/email/login')
+    .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+    .expect(200);
+  return body.data.token;
+}
+
+export type Cart = {
+  kitchenId: string;
+  fulfillment: 'pickup' | 'delivery';
+  addressId?: string;
+  items: { productId: string; quantity: number }[];
+};
+
+export type PlacedOrder = {
+  id: string;
+  pickupCode: string | null;
+  totalKurus: number;
+};
+
+/** Quotes the cart and places it at the quoted total. */
+export async function placeOrder(
+  token: string,
+  cart: Cart,
+): Promise<PlacedOrder> {
+  const quote = await request(APP_URL)
+    .post('/api/v1/orders/quote')
+    .auth(token, { type: 'bearer' })
+    .send(cart)
+    .expect(200);
+  const { body } = await request(APP_URL)
+    .post('/api/v1/orders')
+    .auth(token, { type: 'bearer' })
+    .set('Idempotency-Key', randomUUID())
+    .send({
+      ...cart,
+      acceptedTerms: true,
+      expectedTotalKurus: quote.body.data.totalKurus,
+    })
+    .expect(201);
+  return body.data;
+}
+
+export async function cookStep(
+  token: string,
+  orderId: string,
+  action: string,
+  body: Record<string, unknown> = {},
+): Promise<void> {
+  await request(APP_URL)
+    .post(`/api/v1/kitchens/me/orders/${orderId}/${action}`)
+    .auth(token, { type: 'bearer' })
+    .send(body)
+    .expect(200);
+}
+
+/** Places the cart and walks it to `completed` (pickup with the code, delivery via dispatch). */
+export async function completeOrder(
+  cook: string,
+  customer: string,
+  cart: Cart,
+): Promise<string> {
+  const order = await placeOrder(customer, cart);
+
+  for (const action of ['accept', 'start', 'ready']) {
+    await cookStep(cook, order.id, action);
+  }
+
+  if (cart.fulfillment === 'delivery') {
+    await cookStep(cook, order.id, 'dispatch');
+    await cookStep(cook, order.id, 'complete');
+  } else {
+    await cookStep(cook, order.id, 'complete', {
+      pickupCode: order.pickupCode,
+    });
+  }
+
+  return order.id;
 }
 
 /** Direct SQL for what the API cannot do on demand (moving the clock). */
