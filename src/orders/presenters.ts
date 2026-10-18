@@ -1,7 +1,14 @@
+import { issueSummaryView } from '../order-issues/presenters';
 import { PaymentStatus } from '../payments/domain/payment';
+import { orderReviewView } from '../reviews/presenters';
 import { Order, PersonName } from './domain/order';
 import { OrderItem } from './domain/order-item';
 import { OrderQuote, estimatedMinutesFor } from './order-pricing';
+import {
+  CookOrderTrust,
+  CustomerCardTrust,
+  CustomerOrderTrust,
+} from './order-trust.service';
 import { Fulfillment, OrderStatus } from './order.enums';
 import {
   CookOrderCard,
@@ -74,7 +81,10 @@ export const timeline = (order: Order) => ({
   closedAt: order.closedAt,
 });
 
-export function customerOrderCard(order: Order): CustomerOrderCard {
+export function customerOrderCard(
+  order: Order,
+  trust: CustomerCardTrust,
+): CustomerOrderCard {
   return Object.assign(new CustomerOrderCard(), {
     id: order.id,
     code: order.code,
@@ -92,6 +102,8 @@ export function customerOrderCard(order: Order): CustomerOrderCard {
     totalKurus: order.totalKurus,
     createdAt: order.createdAt,
     estimatedReadyAt: order.estimatedReadyAt,
+    unreadMessages: trust.unreadMessages,
+    canReview: trust.canReview,
   });
 }
 
@@ -99,6 +111,7 @@ export function customerOrderDetail(
   order: Order,
   paymentStatus: PaymentStatus | null,
   deliveryBufferMinutes: number,
+  trust: CustomerOrderTrust,
 ): CustomerOrderDetail {
   return Object.assign(new CustomerOrderDetail(), timeline(order), {
     id: order.id,
@@ -134,10 +147,19 @@ export function customerOrderDetail(
     reason: order.reason,
     cancelledBy: order.cancelledBy,
     payment: paymentStatus ? { status: paymentStatus } : null,
+    review: trust.review ? orderReviewView(trust.review) : null,
+    canReview: trust.canReview,
+    issue: trust.issue ? issueSummaryView(trust.issue) : null,
+    canReportIssue: trust.canReportIssue,
+    unreadMessages: trust.unreadMessages,
+    canMessage: trust.canMessage,
   });
 }
 
-export function cookOrderCard(order: Order): CookOrderCard {
+export function cookOrderCard(
+  order: Order,
+  unreadMessages: number,
+): CookOrderCard {
   return Object.assign(new CookOrderCard(), {
     id: order.id,
     code: order.code,
@@ -151,10 +173,14 @@ export function cookOrderCard(order: Order): CookOrderCard {
     createdAt: order.createdAt,
     expiresAt: order.expiresAt,
     estimatedReadyAt: order.estimatedReadyAt,
+    unreadMessages,
   });
 }
 
-export function cookOrderDetail(order: Order): CookOrderDetail {
+export function cookOrderDetail(
+  order: Order,
+  trust: CookOrderTrust,
+): CookOrderDetail {
   return Object.assign(new CookOrderDetail(), timeline(order), {
     id: order.id,
     code: order.code,
@@ -171,5 +197,9 @@ export function cookOrderDetail(order: Order): CookOrderDetail {
     totalKurus: order.totalKurus,
     reason: order.reason,
     cancelledBy: order.cancelledBy,
+    review: trust.review ? orderReviewView(trust.review) : null,
+    issue: trust.issue ? issueSummaryView(trust.issue) : null,
+    unreadMessages: trust.unreadMessages,
+    canMessage: trust.canMessage,
   });
 }

@@ -69,6 +69,16 @@ export class OrderIssueRelationalRepository implements OrderIssueRepository {
     return this.issues.exists({ where: { orderId, status: IssueStatus.open } });
   }
 
+  async latestForOrder(
+    orderId: OrderIssue['orderId'],
+  ): Promise<NullableType<OrderIssue>> {
+    const entity = await this.issues.findOne({
+      where: { orderId },
+      order: { createdAt: 'DESC', id: 'DESC' },
+    });
+    return entity ? OrderIssueMapper.toDomain(entity) : null;
+  }
+
   async list(
     status: IssueStatus | undefined,
     page: IssuePage,

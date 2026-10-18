@@ -57,6 +57,9 @@ export abstract class ReviewRepository {
     page: ReviewPage,
   ): Promise<Review[]>;
 
+  /** Live reviews of the kitchen without a reply (hidden ones included, like the cook's list). */
+  abstract countUnreplied(kitchenId: Kitchen['id']): Promise<number>;
+
   /** Every review of the kitchen grouped by star, visibility and deletion. */
   abstract ratingGroups(kitchenId: Kitchen['id']): Promise<RatingGroup[]>;
 

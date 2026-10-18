@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SaleType } from '../catalog/catalog.enums';
 import { FileType } from '../files/domain/file';
+import { IssueSummaryView } from '../order-issues/views';
 import { PaymentStatus } from '../payments/domain/payment';
+import { OrderReviewView } from '../reviews/views';
 import { OrderBlocker, OrderIssueKind } from './order-pricing';
 import {
   CancelledBy,
@@ -199,6 +201,12 @@ export class CustomerOrderCard {
 
   @ApiProperty({ type: Date, nullable: true })
   estimatedReadyAt: Date | null;
+
+  @ApiProperty({ type: Number, description: 'Aşçının okunmamış mesajları' })
+  unreadMessages: number;
+
+  @ApiProperty({ type: Boolean, description: '"Değerlendir" düğmesi' })
+  canReview: boolean;
 }
 
 /** Shared by the customer's and the cook's detail. */
@@ -293,6 +301,28 @@ export class CustomerOrderDetail extends OrderTimeline {
 
   @ApiProperty({ type: () => OrderPaymentView, nullable: true })
   payment: OrderPaymentView | null;
+
+  @ApiProperty({ type: () => OrderReviewView, nullable: true })
+  review: OrderReviewView | null;
+
+  @ApiProperty({ type: Boolean })
+  canReview: boolean;
+
+  @ApiProperty({
+    type: () => IssueSummaryView,
+    nullable: true,
+    description: 'Son sorun kaydı',
+  })
+  issue: IssueSummaryView | null;
+
+  @ApiProperty({ type: Boolean })
+  canReportIssue: boolean;
+
+  @ApiProperty({ type: Number })
+  unreadMessages: number;
+
+  @ApiProperty({ type: Boolean, description: 'false: sohbet salt okunur' })
+  canMessage: boolean;
 }
 
 /** GET /kitchens/me/orders — enough to answer a new order from the list. */
@@ -332,6 +362,9 @@ export class CookOrderCard {
 
   @ApiProperty({ type: Date, nullable: true })
   estimatedReadyAt: Date | null;
+
+  @ApiProperty({ type: Number, description: 'Müşterinin okunmamış mesajları' })
+  unreadMessages: number;
 }
 
 /** GET /kitchens/me/orders/:id — never the pickup code or a phone number. */
@@ -380,6 +413,22 @@ export class CookOrderDetail extends OrderTimeline {
 
   @ApiProperty({ enum: CancelledBy, nullable: true })
   cancelledBy: CancelledBy | null;
+
+  @ApiProperty({ type: () => OrderReviewView, nullable: true })
+  review: OrderReviewView | null;
+
+  @ApiProperty({
+    type: () => IssueSummaryView,
+    nullable: true,
+    description: 'Son sorun kaydı (salt okunur)',
+  })
+  issue: IssueSummaryView | null;
+
+  @ApiProperty({ type: Number })
+  unreadMessages: number;
+
+  @ApiProperty({ type: Boolean })
+  canMessage: boolean;
 }
 
 export class CookTabCounts {
@@ -401,6 +450,14 @@ export class CompletedTotalsView {
   revenueKurus: number;
 }
 
+export class KitchenRatingView {
+  @ApiProperty({ type: Number, nullable: true, description: 'Tek ondalık' })
+  avg: number | null;
+
+  @ApiProperty({ type: Number })
+  count: number;
+}
+
 /** GET /kitchens/me/orders/summary */
 export class CookOrderSummary {
   @ApiProperty({ type: () => CookTabCounts })
@@ -420,4 +477,16 @@ export class CookOrderSummary {
 
   @ApiProperty({ type: Boolean })
   hasEverCompleted: boolean;
+
+  @ApiProperty({ type: () => KitchenRatingView })
+  rating: KitchenRatingView;
+
+  @ApiProperty({ type: Number })
+  unrepliedReviews: number;
+
+  @ApiProperty({
+    type: Number,
+    description: 'Tüm siparişlerdeki okunmamış müşteri mesajları',
+  })
+  unreadMessages: number;
 }

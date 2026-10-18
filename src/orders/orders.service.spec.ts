@@ -24,8 +24,14 @@ import {
   OrderRepository,
 } from './infrastructure/persistence/order.repository';
 import { OrderLifecycleService } from './order-lifecycle.service';
+import { OrderTrustService } from './order-trust.service';
 import { anOrder } from './order.fixture';
-import { CancelledBy, Fulfillment, OrderStatus } from './order.enums';
+import {
+  CancelledBy,
+  Fulfillment,
+  OrderScope,
+  OrderStatus,
+} from './order.enums';
 import { OrdersService } from './orders.service';
 
 // A Monday, 12:30 in Istanbul.
@@ -138,6 +144,28 @@ const build = () => {
     charge: jest.fn().mockResolvedValue({ status: PaymentStatus.paid }),
     findByOrderId: jest.fn().mockResolvedValue({ status: PaymentStatus.paid }),
   };
+  const trust = {
+    forCustomer: jest.fn().mockResolvedValue({
+      review: null,
+      canReview: false,
+      issue: null,
+      canReportIssue: false,
+      unreadMessages: 0,
+      canMessage: true,
+    }),
+    forCustomerCards: jest
+      .fn()
+      .mockImplementation((orders: Order[]) =>
+        Promise.resolve(
+          new Map(
+            orders.map((order) => [
+              order.id,
+              { unreadMessages: 1, canReview: false },
+            ]),
+          ),
+        ),
+      ),
+  };
   const config = { getOrThrow: (key: string) => CONFIG[key] };
 
   const service = new OrdersService(
@@ -147,11 +175,13 @@ const build = () => {
     products as unknown as ProductsService,
     addresses as unknown as AddressesService,
     payments as unknown as PaymentsService,
+    trust as unknown as OrderTrustService,
     config as unknown as ConfigService<AllConfigType>,
   );
 
   return {
     service,
+    trust,
     repository,
     lifecycle,
     kitchens,
@@ -395,5 +425,38 @@ describe('OrdersService', () => {
       await expect(service.assertNoActiveOrders(9)).resolves.toBeUndefined();
       expect(repository.hasActiveOrders).toHaveBeenCalledWith(9, null);
     });
+  });
+});
+
+describe('OrdersService trust fields', () => {
+  it('should add the unread count and canReview to every card', async () => {
+    const { service, trust } = build();
+
+    const page = await service.list(9, {
+      scope: OrderScope.past,
+      page: 1,
+      limit: 20,
+    });
+
+    expect(trust.forCustomerCards).toHaveBeenCalledWith([anOrder()]);
+    expect(page.data[0]).toMatchObject({
+      id: 'o1',
+      unreadMessages: 1,
+      canReview: false,
+    });
+  });
+
+  it('should add review, issue and chat state to the detail', async () => {
+    const { service, trust } = build();
+
+    await expect(service.detail(9, 'o1')).resolves.toMatchObject({
+      review: null,
+      canReview: false,
+      issue: null,
+      canReportIssue: false,
+      unreadMessages: 0,
+      canMessage: true,
+    });
+    expect(trust.forCustomer).toHaveBeenCalledWith(anOrder());
   });
 });

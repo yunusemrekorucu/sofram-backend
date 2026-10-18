@@ -18,6 +18,7 @@ import { OrderRepository } from './infrastructure/persistence/order.repository';
 import { orderStatusConflict } from './order-errors';
 import { OrderLifecycleService } from './order-lifecycle.service';
 import { estimatedMinutesFor, estimatedReadyAt } from './order-pricing';
+import { OrderTrustService } from './order-trust.service';
 import { OrderAction, canTransition } from './order-status';
 import { istanbulDayStart, istanbulWeekStart } from './order-time';
 import {
@@ -36,6 +37,7 @@ export class CookOrdersService {
     private readonly orderRepository: OrderRepository,
     private readonly lifecycle: OrderLifecycleService,
     private readonly kitchensService: KitchensService,
+    private readonly trust: OrderTrustService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -51,16 +53,18 @@ export class CookOrdersService {
       { offset: (query.page - 1) * query.limit, limit: query.limit },
     );
 
-    return infinityPagination(orders.map(cookOrderCard), {
-      page: query.page,
-      limit: query.limit,
-    });
+    const unread = await this.trust.cookUnread(orders);
+
+    return infinityPagination(
+      orders.map((order) => cookOrderCard(order, unread.get(order.id) ?? 0)),
+      { page: query.page, limit: query.limit },
+    );
   }
 
   async summary(ownerId: User['id']): Promise<CookOrderSummary> {
     const kitchen = await this.kitchen(ownerId);
     const now = new Date();
-    const [counts, today, week, hasEverCompleted] = await Promise.all([
+    const [counts, today, week, hasEverCompleted, trust] = await Promise.all([
       this.orderRepository.countByStatus(kitchen.id, [
         OrderStatus.pending,
         OrderStatus.accepted,
@@ -71,6 +75,7 @@ export class CookOrdersService {
       this.orderRepository.completedTotals(kitchen.id, istanbulDayStart(now)),
       this.orderRepository.completedTotals(kitchen.id, istanbulWeekStart(now)),
       this.orderRepository.hasCompleted(kitchen.id),
+      this.trust.cookSummary(kitchen),
     ]);
     const count = (status: OrderStatus) => counts[status] ?? 0;
 
@@ -83,11 +88,12 @@ export class CookOrdersService {
       today,
       week,
       hasEverCompleted,
+      ...trust,
     };
   }
 
   async detail(ownerId: User['id'], id: Order['id']): Promise<CookOrderDetail> {
-    return cookOrderDetail(await this.order(ownerId, id));
+    return this.present(await this.order(ownerId, id));
   }
 
   /** Writes estimatedReadyAt: now + longest prep (+ buffer for delivery). */
@@ -102,7 +108,7 @@ export class CookOrdersService {
       }),
     );
 
-    return cookOrderDetail(
+    return this.present(
       await this.lifecycle.advance(
         order,
         'accept',
@@ -159,7 +165,7 @@ export class CookOrdersService {
       }
     }
 
-    return cookOrderDetail(await this.lifecycle.advance(order, 'complete'));
+    return this.present(await this.lifecycle.advance(order, 'complete'));
   }
 
   cancel(
@@ -180,7 +186,11 @@ export class CookOrdersService {
     patch: OrderPatch = {},
   ): Promise<CookOrderDetail> {
     const order = await this.order(ownerId, id);
-    return cookOrderDetail(await this.lifecycle.advance(order, action, patch));
+    return this.present(await this.lifecycle.advance(order, action, patch));
+  }
+
+  private async present(order: Order): Promise<CookOrderDetail> {
+    return cookOrderDetail(order, await this.trust.forCook(order));
   }
 
   /** The cook's kitchen (404 without one), with overdue orders already expired. */

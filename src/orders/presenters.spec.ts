@@ -1,4 +1,7 @@
+import { anIssue } from '../order-issues/order-issue.fixture';
 import { PaymentStatus } from '../payments/domain/payment';
+import { aReview } from '../reviews/review.fixture';
+import { CookOrderTrust, CustomerOrderTrust } from './order-trust.service';
 import { anOrder } from './order.fixture';
 import { Fulfillment, OrderStatus } from './order.enums';
 import {
@@ -9,6 +12,22 @@ import {
   kitchenAddressFor,
   shortName,
 } from './presenters';
+
+const CUSTOMER_TRUST: CustomerOrderTrust = {
+  review: null,
+  canReview: false,
+  issue: null,
+  canReportIssue: false,
+  unreadMessages: 0,
+  canMessage: true,
+};
+
+const COOK_TRUST: CookOrderTrust = {
+  review: null,
+  issue: null,
+  unreadMessages: 0,
+  canMessage: true,
+};
 
 describe('shortName', () => {
   it('should keep the first name and the Turkish initial of the last', () => {
@@ -64,11 +83,15 @@ describe('kitchenAddressFor', () => {
 
 describe('customerOrderCard', () => {
   it('should summarize the items and the kitchen', () => {
-    expect(customerOrderCard(anOrder())).toMatchObject({
+    expect(
+      customerOrderCard(anOrder(), { unreadMessages: 2, canReview: true }),
+    ).toMatchObject({
       code: 'S-7K3F',
       kitchen: { id: 'k1', name: 'Ayşe Teyze Mutfağı', coverPhoto: null },
       items: [{ name: 'Mantı', quantity: 2 }],
       totalKurus: 29400,
+      unreadMessages: 2,
+      canReview: true,
     });
   });
 });
@@ -76,7 +99,7 @@ describe('customerOrderCard', () => {
 describe('customerOrderDetail', () => {
   it('should show the pickup code, the cook card and the payment', () => {
     expect(
-      customerOrderDetail(anOrder(), PaymentStatus.paid, 15),
+      customerOrderDetail(anOrder(), PaymentStatus.paid, 15, CUSTOMER_TRUST),
     ).toMatchObject({
       pickupCode: '0427',
       kitchen: { cookName: 'Ayşe Y.', district: 'Kadıköy' },
@@ -93,12 +116,13 @@ describe('customerOrderDetail', () => {
         anOrder({ status: OrderStatus.accepted }),
         PaymentStatus.paid,
         15,
+        CUSTOMER_TRUST,
       ).estimatedMinutes,
     ).toBeNull();
   });
 
   it('should never carry the cook’s or the customer’s contact details', () => {
-    const detail = customerOrderDetail(anOrder(), null, 15);
+    const detail = customerOrderDetail(anOrder(), null, 15, CUSTOMER_TRUST);
 
     expect(detail).not.toHaveProperty('customer');
     expect(detail).not.toHaveProperty('customerId');
@@ -109,7 +133,10 @@ describe('customerOrderDetail', () => {
 
 describe('cook views', () => {
   it('should name the customer briefly and keep the pickup code out', () => {
-    for (const view of [cookOrderCard(anOrder()), cookOrderDetail(anOrder())]) {
+    for (const view of [
+      cookOrderCard(anOrder(), 0),
+      cookOrderDetail(anOrder(), COOK_TRUST),
+    ]) {
       expect(view).toMatchObject({
         customerName: 'Deniz İ.',
         items: [{ name: 'Mantı', note: 'Az acılı' }],
@@ -137,7 +164,61 @@ describe('cook views', () => {
     expect(
       cookOrderDetail(
         anOrder({ fulfillment: Fulfillment.delivery, deliveryAddress }),
+        COOK_TRUST,
       ).deliveryAddress,
     ).toEqual(deliveryAddress);
+  });
+});
+
+describe('trust on order screens', () => {
+  const trust: CustomerOrderTrust = {
+    review: aReview({ reply: 'Afiyet olsun' }),
+    canReview: false,
+    issue: anIssue({ adminNote: 'İade edildi', refundKurus: 6500 }),
+    canReportIssue: false,
+    unreadMessages: 3,
+    canMessage: false,
+  };
+
+  it('should show the customer their review, the latest issue and the chat state', () => {
+    const detail = customerOrderDetail(
+      anOrder({ status: OrderStatus.completed }),
+      PaymentStatus.paid,
+      15,
+      trust,
+    );
+
+    expect(detail).toMatchObject({
+      review: { id: 'r1', rating: 5, reply: 'Afiyet olsun' },
+      canReview: false,
+      issue: {
+        id: 'is1',
+        category: 'missing_item',
+        status: 'open',
+        refundKurus: 6500,
+        adminNote: 'İade edildi',
+      },
+      canReportIssue: false,
+      unreadMessages: 3,
+      canMessage: false,
+    });
+    expect(detail.issue).not.toHaveProperty('description');
+    expect(detail.review).not.toHaveProperty('authorName');
+  });
+
+  it('should show the cook the same review and issue, read-only', () => {
+    expect(
+      cookOrderDetail(anOrder(), {
+        review: trust.review,
+        issue: trust.issue,
+        unreadMessages: 1,
+        canMessage: true,
+      }),
+    ).toMatchObject({
+      review: { id: 'r1' },
+      issue: { id: 'is1', adminNote: 'İade edildi' },
+      unreadMessages: 1,
+      canMessage: true,
+    });
   });
 });

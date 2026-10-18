@@ -10,6 +10,7 @@ import {
   Repository,
 } from 'typeorm';
 import { SaleType } from '../../../../../catalog/catalog.enums';
+import { ReadMarker } from '../../../../../trust/trust-rules';
 import { Kitchen } from '../../../../../kitchens/domain/kitchen';
 import { NewPayment } from '../../../../../payments/domain/payment';
 import { PaymentEntity } from '../../../../../payments/infrastructure/persistence/relational/entities/payment.entity';
@@ -366,6 +367,10 @@ export class OrderRelationalRepository implements OrderRepository {
       .where('"customerId" = :customerId', { customerId: Number(customerId) })
       .andWhere('"deliveryAddress" IS NOT NULL')
       .execute();
+  }
+
+  async markRead(id: Order['id'], marker: ReadMarker, at: Date): Promise<void> {
+    await this.orders.update({ id }, { [marker]: at });
   }
 
   /** ON CONFLICT DO NOTHING + retry: a code collision never aborts the transaction. */

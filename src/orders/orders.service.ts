@@ -27,6 +27,7 @@ import { generatePickupCode } from './order-codes';
 import { activeOrdersExist, orderTotalChanged } from './order-errors';
 import { OrderLifecycleService } from './order-lifecycle.service';
 import { OrderQuote, quoteFieldErrors, quoteOrder } from './order-pricing';
+import { CustomerCardTrust, OrderTrustService } from './order-trust.service';
 import { ACTIVE_STATUSES, CLOSED_STATUSES } from './order-status';
 import {
   CancelledBy,
@@ -70,6 +71,7 @@ export class OrdersService {
     private readonly productsService: ProductsService,
     private readonly addressesService: AddressesService,
     private readonly paymentsService: PaymentsService,
+    private readonly trust: OrderTrustService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -166,10 +168,14 @@ export class OrdersService {
       { offset: (query.page - 1) * query.limit, limit: query.limit },
     );
 
-    return infinityPagination(orders.map(customerOrderCard), {
-      page: query.page,
-      limit: query.limit,
-    });
+    const trust = await this.trust.forCustomerCards(orders);
+
+    return infinityPagination(
+      orders.map((order) =>
+        customerOrderCard(order, trust.get(order.id) as CustomerCardTrust),
+      ),
+      { page: query.page, limit: query.limit },
+    );
   }
 
   async detail(
@@ -333,11 +339,15 @@ export class OrdersService {
   }
 
   private async present(order: Order): Promise<CustomerOrderDetail> {
-    const payment = await this.paymentsService.findByOrderId(order.id);
+    const [payment, trust] = await Promise.all([
+      this.paymentsService.findByOrderId(order.id),
+      this.trust.forCustomer(order),
+    ]);
     return customerOrderDetail(
       order,
       payment?.status ?? null,
       this.bufferMinutes(),
+      trust,
     );
   }
 

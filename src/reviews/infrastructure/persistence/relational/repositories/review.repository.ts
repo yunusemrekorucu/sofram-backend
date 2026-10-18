@@ -171,6 +171,10 @@ export class ReviewRelationalRepository implements ReviewRepository {
     return entities.map((entity) => ReviewMapper.toDomain(entity));
   }
 
+  countUnreplied(kitchenId: Kitchen['id']): Promise<number> {
+    return this.reviews.count({ where: { kitchenId, reply: IsNull() } });
+  }
+
   ratingGroups(kitchenId: Kitchen['id']): Promise<RatingGroup[]> {
     return ratingGroupsOf(this.reviews.manager, kitchenId);
   }

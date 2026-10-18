@@ -10,6 +10,7 @@ import { KitchensService } from '../kitchens/kitchens.service';
 import { Order } from './domain/order';
 import { OrderRepository } from './infrastructure/persistence/order.repository';
 import { OrderLifecycleService } from './order-lifecycle.service';
+import { OrderTrustService } from './order-trust.service';
 import { anItem, anOrder } from './order.fixture';
 import {
   CancelledBy,
@@ -50,6 +51,20 @@ const build = (order: Order = anOrder()) => {
   const kitchens = {
     findMine: jest.fn().mockResolvedValue({ id: 'k1', ownerId: 7 }),
   };
+  const trust = {
+    forCook: jest.fn().mockResolvedValue({
+      review: null,
+      issue: null,
+      unreadMessages: 2,
+      canMessage: true,
+    }),
+    cookUnread: jest.fn().mockResolvedValue(new Map([['o1', 4]])),
+    cookSummary: jest.fn().mockResolvedValue({
+      rating: { avg: 4.8, count: 12 },
+      unrepliedReviews: 3,
+      unreadMessages: 5,
+    }),
+  };
   const config = {
     getOrThrow: (key: string) => ({ 'orders.deliveryBufferMinutes': 15 })[key],
   };
@@ -58,10 +73,11 @@ const build = (order: Order = anOrder()) => {
     repository as unknown as OrderRepository,
     lifecycle as unknown as OrderLifecycleService,
     kitchens as unknown as KitchensService,
+    trust as unknown as OrderTrustService,
     config as unknown as ConfigService<AllConfigType>,
   );
 
-  return { service, repository, lifecycle, kitchens };
+  return { service, repository, lifecycle, kitchens, trust };
 };
 
 describe('CookOrdersService', () => {
@@ -118,6 +134,9 @@ describe('CookOrdersService', () => {
       today: { orders: 3, revenueKurus: 42000 },
       week: { orders: 9, revenueKurus: 126000 },
       hasEverCompleted: true,
+      rating: { avg: 4.8, count: 12 },
+      unrepliedReviews: 3,
+      unreadMessages: 5,
     });
     expect(repository.completedTotals).toHaveBeenNthCalledWith(
       1,
@@ -229,5 +248,35 @@ describe('CookOrdersService', () => {
         ConflictException,
       );
     });
+  });
+});
+
+describe('CookOrdersService trust fields', () => {
+  it('should add the unread count to every card', async () => {
+    const { service, trust } = build();
+
+    const page = await service.list(7, {
+      tab: CookTab.ready,
+      page: 1,
+      limit: 20,
+    });
+
+    expect(trust.cookUnread).toHaveBeenCalledWith([anOrder()]);
+    expect(page.data[0].unreadMessages).toBe(4);
+  });
+
+  it('should add review, issue and chat state to the detail and every step', async () => {
+    const { service, trust } = build(anOrder({ status: OrderStatus.accepted }));
+
+    await expect(service.detail(7, 'o1')).resolves.toMatchObject({
+      review: null,
+      issue: null,
+      unreadMessages: 2,
+      canMessage: true,
+    });
+    await expect(service.start(7, 'o1')).resolves.toMatchObject({
+      unreadMessages: 2,
+    });
+    expect(trust.forCook).toHaveBeenCalledTimes(2);
   });
 });

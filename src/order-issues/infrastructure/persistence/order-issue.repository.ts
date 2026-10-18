@@ -28,6 +28,11 @@ export abstract class OrderIssueRepository {
 
   abstract hasOpen(orderId: Order['id']): Promise<boolean>;
 
+  /** The newest report of the order — the open one, if any (only one can be). */
+  abstract latestForOrder(
+    orderId: Order['id'],
+  ): Promise<NullableType<OrderIssue>>;
+
   /** Newest first; every status when `status` is undefined. */
   abstract list(
     status: IssueStatus | undefined,

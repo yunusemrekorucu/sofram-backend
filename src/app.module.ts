@@ -55,8 +55,11 @@ import { FavoritesModule } from './favorites/favorites.module';
 
 import { OrderIssuesModule } from './order-issues/order-issues.module';
 
+import { OrderMessagesModule } from './order-messages/order-messages.module';
+
 @Module({
   imports: [
+    OrderMessagesModule,
     OrderIssuesModule,
     FavoritesModule,
     ReviewsModule,

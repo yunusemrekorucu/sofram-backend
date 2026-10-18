@@ -1,5 +1,6 @@
 import { Kitchen } from '../../../kitchens/domain/kitchen';
 import { NewPayment } from '../../../payments/domain/payment';
+import { ReadMarker } from '../../../trust/trust-rules';
 import { User } from '../../../users/domain/user';
 import { NullableType } from '../../../utils/types/nullable.type';
 import { NewOrder, Order, OrderPatch } from '../../domain/order';
@@ -117,4 +118,11 @@ export abstract class OrderRepository {
 
   /** Account deletion (KVKK): the copies of the customer's addresses go. */
   abstract clearDeliveryAddresses(customerId: User['id']): Promise<void>;
+
+  /** A side opened the chat: its messages up to `at` count as read. */
+  abstract markRead(
+    id: Order['id'],
+    marker: ReadMarker,
+    at: Date,
+  ): Promise<void>;
 }

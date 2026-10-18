@@ -722,6 +722,9 @@ describe('Orders', () => {
             today: { orders: 2, revenueKurus: 28000 },
             week: { orders: 2, revenueKurus: 28000 },
             hasEverCompleted: true,
+            rating: { avg: null, count: 0 },
+            unrepliedReviews: 0,
+            unreadMessages: 0,
           });
         }));
 
