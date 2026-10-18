@@ -7,6 +7,7 @@ import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
 import discoveryConfig from './discovery/config/discovery.config';
 import mailConfig from './mail/config/mail.config';
+import ordersConfig from './orders/config/orders.config';
 import fileConfig from './files/config/file.config';
 import googleConfig from './auth-google/config/google.config';
 import appleConfig from './auth-apple/config/apple.config';
@@ -59,6 +60,7 @@ import { DiscoveryModule } from './discovery/discovery.module';
         fileConfig,
         googleConfig,
         appleConfig,
+        ordersConfig,
       ],
       envFilePath: ['.env'],
     }),
