@@ -13,6 +13,9 @@ import { SessionModule } from '../session/session.module';
 import { KitchensModule } from '../kitchens/kitchens.module';
 import { ProductsModule } from '../products/products.module';
 import { OrdersModule } from '../orders/orders.module';
+import { ReviewsModule } from '../reviews/reviews.module';
+import { FavoritesModule } from '../favorites/favorites.module';
+import { OrderMessagesModule } from '../order-messages/order-messages.module';
 
 const infrastructurePersistenceModule = RelationalUserPersistenceModule;
 
@@ -26,6 +29,9 @@ const infrastructurePersistenceModule = RelationalUserPersistenceModule;
     KitchensModule,
     ProductsModule,
     OrdersModule,
+    ReviewsModule,
+    FavoritesModule,
+    OrderMessagesModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

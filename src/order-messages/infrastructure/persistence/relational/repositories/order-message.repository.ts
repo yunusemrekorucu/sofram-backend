@@ -5,6 +5,7 @@ import { Kitchen } from '../../../../../kitchens/domain/kitchen';
 import { Order } from '../../../../../orders/domain/order';
 import { unreadRule } from '../../../../../trust/trust-rules';
 import { MessageSide } from '../../../../../trust/trust.enums';
+import { User } from '../../../../../users/domain/user';
 import {
   NewOrderMessage,
   OrderMessage,
@@ -80,6 +81,10 @@ export class OrderMessageRelationalRepository implements OrderMessageRepository 
       .getRawMany<{ orderId: string; count: string }>();
 
     return new Map(rows.map((row) => [row.orderId, Number(row.count)]));
+  }
+
+  async removeAllBySender(senderId: User['id']): Promise<void> {
+    await this.messages.delete({ senderId: Number(senderId) });
   }
 
   async countUnreadForKitchen(kitchenId: Kitchen['id']): Promise<number> {

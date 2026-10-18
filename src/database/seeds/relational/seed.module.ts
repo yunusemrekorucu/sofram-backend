@@ -9,6 +9,7 @@ import { KitchenSeedModule } from './kitchen/kitchen-seed.module';
 import { OrderSeedModule } from './order/order-seed.module';
 import { RoleSeedModule } from './role/role-seed.module';
 import { StatusSeedModule } from './status/status-seed.module';
+import { TrustSeedModule } from './trust/trust-seed.module';
 import { UserSeedModule } from './user/user-seed.module';
 import databaseConfig from '../../config/database.config';
 import appConfig from '../../../config/app.config';
@@ -21,6 +22,7 @@ import appConfig from '../../../config/app.config';
     CategorySeedModule,
     KitchenSeedModule,
     OrderSeedModule,
+    TrustSeedModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, appConfig],

@@ -66,11 +66,14 @@ const build = (order: Order | null = completed) => {
       ),
     addReport: jest.fn().mockResolvedValue(undefined),
     listReports: jest.fn().mockResolvedValue([]),
+    softDeleteByAuthor: jest.fn().mockResolvedValue(undefined),
+    softDeleteByKitchen: jest.fn().mockResolvedValue(undefined),
   };
   const orders = { findForCustomer: jest.fn().mockResolvedValue(order) };
   const kitchens = {
     findById: jest.fn().mockResolvedValue({ id: 'k1' }),
     findMine: jest.fn().mockResolvedValue({ id: 'k1', ownerId: 7 }),
+    findByOwner: jest.fn().mockResolvedValue(null),
   };
   const files = {
     findByIds: jest.fn((ids: string[]) =>
@@ -295,5 +298,20 @@ describe('ReviewsService', () => {
     await expect(service.setHidden('r2', true)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+});
+
+describe('ReviewsService.removeForUser', () => {
+  it('should remove the user’s reviews and, for a cook, the kitchen’s', async () => {
+    const { service, reviews, kitchens } = build();
+    kitchens.findByOwner.mockResolvedValueOnce({ id: 'k1' });
+
+    await service.removeForUser(7);
+    expect(reviews.softDeleteByAuthor).toHaveBeenCalledWith(7);
+    expect(reviews.softDeleteByKitchen).toHaveBeenCalledWith('k1');
+
+    await service.removeForUser(9);
+    expect(reviews.softDeleteByAuthor).toHaveBeenCalledWith(9);
+    expect(reviews.softDeleteByKitchen).toHaveBeenCalledTimes(1);
   });
 });

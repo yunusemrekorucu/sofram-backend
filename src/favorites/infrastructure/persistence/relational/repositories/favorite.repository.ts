@@ -29,6 +29,10 @@ export class FavoriteRelationalRepository implements FavoriteRepository {
     await this.favorites.delete({ userId: Number(userId), kitchenId });
   }
 
+  async removeAllForUser(userId: User['id']): Promise<void> {
+    await this.favorites.delete({ userId: Number(userId) });
+  }
+
   async listKitchens(
     userId: User['id'],
     page: FavoritePage,

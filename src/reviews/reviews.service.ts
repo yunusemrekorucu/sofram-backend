@@ -218,6 +218,19 @@ export class ReviewsService {
     );
   }
 
+  /**
+   * Account deletion, before the kitchen goes: the user's reviews (scrubbed,
+   * ratings recomputed) and, for a cook, the kitchen's reviews and replies.
+   */
+  async removeForUser(userId: User['id']): Promise<void> {
+    await this.reviewRepository.softDeleteByAuthor(userId);
+    const kitchen = await this.kitchensService.findByOwner(userId);
+
+    if (kitchen) {
+      await this.reviewRepository.softDeleteByKitchen(kitchen.id);
+    }
+  }
+
   /** A review of the cook's own kitchen (404 without a kitchen or for another's). */
   private async mine(ownerId: User['id'], id: Review['id']): Promise<Review> {
     const kitchen = await this.kitchensService.findMine(ownerId);

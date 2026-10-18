@@ -73,6 +73,11 @@ export class OrderMessagesService {
     return this.send(order, ownerId, MessageSide.cook, body);
   }
 
+  /** Account deletion: the user's messages are hard-deleted (the other side's stay). */
+  removeAllForUser(userId: User['id']): Promise<void> {
+    return this.messageRepository.removeAllBySender(userId);
+  }
+
   /** Moves the reader's marker to now, then returns the messages. */
   private async read(
     order: Order,

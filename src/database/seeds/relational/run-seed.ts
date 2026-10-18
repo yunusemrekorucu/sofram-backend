@@ -5,6 +5,7 @@ import { OrderSeedService } from './order/order-seed.service';
 import { RoleSeedService } from './role/role-seed.service';
 import { SeedModule } from './seed.module';
 import { StatusSeedService } from './status/status-seed.service';
+import { TrustSeedService } from './trust/trust-seed.service';
 import { UserSeedService } from './user/user-seed.service';
 
 const runSeed = async () => {
@@ -17,6 +18,7 @@ const runSeed = async () => {
   await app.get(CategorySeedService).run();
   await app.get(KitchenSeedService).run();
   await app.get(OrderSeedService).run();
+  await app.get(TrustSeedService).run();
 
   await app.close();
 };

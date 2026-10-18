@@ -45,8 +45,11 @@ const isUniqueViolation = (error: unknown, table: string): boolean =>
   (error.driverError as { code?: string }).code === '23505' &&
   (error.driverError as { table?: string }).table === table;
 
-/** Grouped exactly as ratingSummary() expects; deleted rows included on purpose. */
-async function ratingGroupsOf(
+/**
+ * Grouped exactly as ratingSummary() expects; deleted rows included on
+ * purpose. Also used by the dev seed to recompute kitchen ratings.
+ */
+export async function ratingGroupsOf(
   manager: EntityManager,
   kitchenId: Kitchen['id'],
 ): Promise<RatingGroup[]> {
@@ -264,6 +267,48 @@ export class ReviewRelationalRepository implements ReviewRepository {
       .getMany();
 
     return entities.map((entity) => ReviewReportMapper.toDomain(entity));
+  }
+
+  async softDeleteByAuthor(authorId: User['id']): Promise<void> {
+    await this.reviews.manager.transaction(async (manager) => {
+      const rows = await manager
+        .createQueryBuilder(ReviewEntity, 'r')
+        .select('DISTINCT r."kitchenId"', 'kitchenId')
+        .where('r."authorId" = :authorId', { authorId: Number(authorId) })
+        .getRawMany<{ kitchenId: string }>();
+      // Always the same lock order: no deadlock with another deletion.
+      const kitchenIds = rows.map((row) => row.kitchenId).sort();
+
+      for (const kitchenId of kitchenIds) {
+        await this.lockKitchen(manager, kitchenId);
+      }
+
+      await manager
+        .createQueryBuilder()
+        .update(ReviewEntity)
+        .set({ deletedAt: () => 'now()', comment: null, photos: [] })
+        .where('"authorId" = :authorId', { authorId: Number(authorId) })
+        .andWhere('"deletedAt" IS NULL')
+        .execute();
+
+      for (const kitchenId of kitchenIds) {
+        await this.recompute(manager, kitchenId);
+      }
+    });
+  }
+
+  async softDeleteByKitchen(kitchenId: Kitchen['id']): Promise<void> {
+    await this.reviews.manager.transaction(async (manager) => {
+      await this.lockKitchen(manager, kitchenId);
+      await manager
+        .createQueryBuilder()
+        .update(ReviewEntity)
+        .set({ deletedAt: () => 'now()', reply: null, repliedAt: null })
+        .where('"kitchenId" = :kitchenId', { kitchenId })
+        .andWhere('"deletedAt" IS NULL')
+        .execute();
+      await this.recompute(manager, kitchenId);
+    });
   }
 
   /** Serializes the rating writers of one kitchen (READ COMMITTED would lose updates). */

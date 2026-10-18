@@ -86,4 +86,14 @@ export abstract class ReviewRepository {
 
   /** Reports of reviews that are not deleted; newest first. */
   abstract listReports(page: ReviewPage): Promise<ReviewReport[]>;
+
+  /**
+   * Account deletion of a customer: their reviews are soft-deleted with the
+   * comment and photos scrubbed (KVKK), and every affected kitchen's rating
+   * is recomputed — one transaction.
+   */
+  abstract softDeleteByAuthor(authorId: User['id']): Promise<void>;
+
+  /** Account deletion of a cook: the kitchen's reviews go, their replies scrubbed. */
+  abstract softDeleteByKitchen(kitchenId: Kitchen['id']): Promise<void>;
 }

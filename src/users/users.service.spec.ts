@@ -1,9 +1,12 @@
 import { ConflictException } from '@nestjs/common';
 import { AddressesService } from '../addresses/addresses.service';
+import { FavoritesService } from '../favorites/favorites.service';
 import { FilesService } from '../files/files.service';
 import { KitchensService } from '../kitchens/kitchens.service';
+import { OrderMessagesService } from '../order-messages/order-messages.service';
 import { OrdersService } from '../orders/orders.service';
 import { ProductsService } from '../products/products.service';
+import { ReviewsService } from '../reviews/reviews.service';
 import { SessionService } from '../session/session.service';
 import { User } from './domain/user';
 import { UserRepository } from './infrastructure/persistence/user.repository';
@@ -29,6 +32,9 @@ const buildUsersService = () => {
     assertNoActiveOrders: jest.fn().mockResolvedValue(undefined),
     clearDeliveryAddresses: jest.fn(),
   };
+  const reviews = { removeForUser: jest.fn() };
+  const favorites = { removeAllForUser: jest.fn() };
+  const messages = { removeAllForUser: jest.fn() };
 
   const service = new UsersService(
     repository as unknown as UserRepository,
@@ -38,6 +44,9 @@ const buildUsersService = () => {
     kitchens as unknown as KitchensService,
     products as unknown as ProductsService,
     orders as unknown as OrdersService,
+    reviews as unknown as ReviewsService,
+    favorites as unknown as FavoritesService,
+    messages as unknown as OrderMessagesService,
   );
 
   return {
@@ -48,11 +57,14 @@ const buildUsersService = () => {
     kitchens,
     products,
     orders,
+    reviews,
+    favorites,
+    messages,
   };
 };
 
 describe('UsersService.remove', () => {
-  it('should anonymize the user, then remove order addresses, the menu, kitchen, addresses and sessions', async () => {
+  it('should anonymize the user, then remove order addresses, reviews, favorites, messages, the menu, kitchen, addresses and sessions', async () => {
     const {
       service,
       repository,
@@ -61,6 +73,9 @@ describe('UsersService.remove', () => {
       kitchens,
       products,
       orders,
+      reviews,
+      favorites,
+      messages,
     } = buildUsersService();
 
     await service.remove(7);
@@ -68,6 +83,9 @@ describe('UsersService.remove', () => {
     expect(orders.assertNoActiveOrders).toHaveBeenCalledWith(7);
     expect(repository.anonymizeAndSoftDelete).toHaveBeenCalledWith(7);
     expect(orders.clearDeliveryAddresses).toHaveBeenCalledWith(7);
+    expect(reviews.removeForUser).toHaveBeenCalledWith(7);
+    expect(favorites.removeAllForUser).toHaveBeenCalledWith(7);
+    expect(messages.removeAllForUser).toHaveBeenCalledWith(7);
     expect(products.removeAllForOwner).toHaveBeenCalledWith(7);
     expect(kitchens.removeForOwner).toHaveBeenCalledWith(7);
     expect(addresses.removeAllForUser).toHaveBeenCalledWith(7);
@@ -77,6 +95,9 @@ describe('UsersService.remove', () => {
       orders.assertNoActiveOrders,
       repository.anonymizeAndSoftDelete,
       orders.clearDeliveryAddresses,
+      reviews.removeForUser,
+      favorites.removeAllForUser,
+      messages.removeAllForUser,
       products.removeAllForOwner,
       kitchens.removeForOwner,
       addresses.removeAllForUser,

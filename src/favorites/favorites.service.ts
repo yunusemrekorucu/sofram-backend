@@ -65,6 +65,11 @@ export class FavoritesService {
     );
   }
 
+  /** Account deletion: hard delete. */
+  removeAllForUser(userId: User['id']): Promise<void> {
+    return this.favoriteRepository.removeAllForUser(userId);
+  }
+
   async favoriteKitchenIds(
     userId: User['id'],
     kitchenIds: Kitchen['id'][],

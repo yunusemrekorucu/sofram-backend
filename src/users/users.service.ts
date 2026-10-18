@@ -23,6 +23,9 @@ import { SessionService } from '../session/session.service';
 import { KitchensService } from '../kitchens/kitchens.service';
 import { ProductsService } from '../products/products.service';
 import { OrdersService } from '../orders/orders.service';
+import { ReviewsService } from '../reviews/reviews.service';
+import { FavoritesService } from '../favorites/favorites.service';
+import { OrderMessagesService } from '../order-messages/order-messages.service';
 
 @Injectable()
 export class UsersService {
@@ -34,6 +37,9 @@ export class UsersService {
     private readonly kitchensService: KitchensService,
     private readonly productsService: ProductsService,
     private readonly ordersService: OrdersService,
+    private readonly reviewsService: ReviewsService,
+    private readonly favoritesService: FavoritesService,
+    private readonly orderMessagesService: OrderMessagesService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -326,15 +332,21 @@ export class UsersService {
    * The only account-deletion path (DELETE /auth/me and admin
    * DELETE /users/:id). Refused (409 activeOrdersExist) while an order is
    * open as customer or cook. Then: anonymize + soft delete the user in one
-   * UPDATE, clear the delivery-address copies on their orders, take the menu
-   * and kitchen off discovery, hard-delete their addresses (GPS) and end
-   * every session, which also revokes outstanding access tokens (see
-   * JwtStrategy).
+   * UPDATE, clear the delivery-address copies on their orders, soft-delete
+   * their reviews (scrubbed, ratings recomputed) and their kitchen's,
+   * hard-delete their favorites and chat messages, take the menu and kitchen
+   * off discovery, hard-delete their addresses (GPS) and end every session,
+   * which also revokes outstanding access tokens (see JwtStrategy). Issue
+   * reports stay (dispute record).
    */
   async remove(id: User['id']): Promise<void> {
     await this.ordersService.assertNoActiveOrders(id);
     await this.usersRepository.anonymizeAndSoftDelete(id);
     await this.ordersService.clearDeliveryAddresses(id);
+    // Before the kitchen goes: its reviews are found through it.
+    await this.reviewsService.removeForUser(id);
+    await this.favoritesService.removeAllForUser(id);
+    await this.orderMessagesService.removeAllForUser(id);
     await this.productsService.removeAllForOwner(id);
     await this.kitchensService.removeForOwner(id);
     await this.addressesService.removeAllForUser(id);

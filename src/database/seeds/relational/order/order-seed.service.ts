@@ -62,7 +62,7 @@ const DELIVERY_BUFFER_MINUTES = 15;
 const COORD_PRECISION = 3;
 const MINUTE_MS = 60_000;
 
-type SeedOrder = {
+export type SeedOrder = {
   status: OrderStatus;
   fulfillment: Fulfillment;
   /** [product name, quantity] from the first seed kitchen's menu. */
@@ -195,15 +195,20 @@ export class OrderSeedService {
     }
 
     const customer = await this.customer();
-    const menu = new Map(
+    const menu = await this.menuOf(kitchen);
+
+    for (const seed of ORDERS) {
+      await this.addOrder(seed, kitchen, customer, menu);
+    }
+  }
+
+  /** The kitchen's products by name, for SeedOrder.items. */
+  async menuOf(kitchen: KitchenEntity): Promise<Map<string, ProductEntity>> {
+    return new Map(
       (await this.products.find({ where: { kitchenId: kitchen.id } })).map(
         (product) => [product.name, product],
       ),
     );
-
-    for (const seed of ORDERS) {
-      await this.order(seed, kitchen, customer, menu);
-    }
   }
 
   private async customer(): Promise<UserEntity> {
@@ -234,12 +239,13 @@ export class OrderSeedService {
     return customer;
   }
 
-  private async order(
+  /** One order with its items and payment, as if it had happened `minutesAgo`. */
+  async addOrder(
     seed: SeedOrder,
     kitchen: KitchenEntity,
     customer: UserEntity,
     menu: Map<string, ProductEntity>,
-  ): Promise<void> {
+  ): Promise<OrderEntity> {
     const createdAt = new Date(Date.now() - seed.minutesAgo * MINUTE_MS);
     const at = (minutes: number) =>
       new Date(createdAt.getTime() + minutes * MINUTE_MS);
@@ -349,10 +355,13 @@ export class OrderSeedService {
         provider: 'dev',
         providerRef: `dev_seed_${order.code}`,
         amountKurus: totalKurus,
+        refundedKurus: closed ? totalKurus : 0,
         status: closed ? PaymentStatus.refunded : PaymentStatus.paid,
         paidAt: createdAt,
         refundedAt: closed ? at(3) : null,
       }),
     );
+
+    return order;
   }
 }

@@ -16,6 +16,9 @@ export abstract class FavoriteRepository {
     page: FavoritePage,
   ): Promise<Kitchen[]>;
 
+  /** Account deletion. */
+  abstract removeAllForUser(userId: User['id']): Promise<void>;
+
   /** Which of `kitchenIds` the user has favorited. */
   abstract favoriteKitchenIds(
     userId: User['id'],
