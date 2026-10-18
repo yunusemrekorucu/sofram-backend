@@ -51,8 +51,11 @@ import { PaymentsModule } from './payments/payments.module';
 
 import { ReviewsModule } from './reviews/reviews.module';
 
+import { FavoritesModule } from './favorites/favorites.module';
+
 @Module({
   imports: [
+    FavoritesModule,
     ReviewsModule,
     PaymentsModule,
     OrdersModule,

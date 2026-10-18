@@ -1,6 +1,6 @@
 import { Allergen } from '../catalog/catalog.enums';
 import { deliveryFeeFor } from '../catalog/delivery';
-import { LatLng, roundCoord, roundDistance } from '../catalog/geo';
+import { LatLng, haversineKm, roundCoord, roundDistance } from '../catalog/geo';
 import { openingState } from '../catalog/opening-state';
 import { Kitchen } from '../kitchens/domain/kitchen';
 import { Product } from '../products/domain/product';
@@ -21,7 +21,20 @@ export type ViewerContext = {
   pickupRadiusKm: number;
   coordPrecision: number;
   now: Date;
+  /** Of the kitchens being shown, the ones the viewer favorited. */
+  favoriteKitchenIds: ReadonlySet<Kitchen['id']>;
 };
+
+/** Measured to the rounded point, so probing cannot recover the exact one. */
+export function roundedDistanceKm(
+  kitchen: Pick<Kitchen, 'latitude' | 'longitude'>,
+  ctx: Pick<ViewerContext, 'point' | 'coordPrecision'>,
+): number {
+  return haversineKm(ctx.point, {
+    latitude: roundCoord(kitchen.latitude, ctx.coordPrecision),
+    longitude: roundCoord(kitchen.longitude, ctx.coordPrecision),
+  });
+}
 
 export function kitchenSummary(
   kitchen: Kitchen,
@@ -37,6 +50,8 @@ export function kitchenSummary(
     distanceKm: roundDistance(distanceKm),
     isOpenNow: opening.isOpenNow,
     opensAt: opening.opensAt,
+    ratingAvg: kitchen.ratingAvg,
+    ratingCount: kitchen.ratingCount,
   });
 }
 
@@ -64,6 +79,7 @@ export function kitchenCard(
       deliveryFeeKurus,
       freeDeliveryMinKurus: kitchen.freeDeliveryMinKurus,
       isVerified: kitchen.isVerified,
+      isFavorite: ctx.favoriteKitchenIds.has(kitchen.id),
     },
   );
 }

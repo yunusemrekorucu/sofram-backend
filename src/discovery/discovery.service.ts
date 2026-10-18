@@ -1,9 +1,9 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { likePattern } from '../catalog/fold-turkish';
-import { haversineKm, roundCoord } from '../catalog/geo';
 import { istanbulClock } from '../catalog/opening-state';
 import { AllConfigType } from '../config/config.type';
+import { FavoritesService } from '../favorites/favorites.service';
 import { Kitchen } from '../kitchens/domain/kitchen';
 import { User } from '../users/domain/user';
 import { UsersService } from '../users/users.service';
@@ -18,6 +18,7 @@ import {
   kitchenDetail,
   productCard,
   productDetail,
+  roundedDistanceKm,
 } from './presenters';
 import {
   KitchenCard,
@@ -35,6 +36,7 @@ export class DiscoveryService {
   constructor(
     private readonly discoveryRepository: DiscoveryRepository,
     private readonly usersService: UsersService,
+    private readonly favoritesService: FavoritesService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
 
@@ -46,9 +48,13 @@ export class DiscoveryService {
     const hits = await this.discoveryRepository.findKitchens(
       this.filter(ctx, query),
     );
+    const viewer = await this.withFavorites(
+      ctx,
+      hits.map((hit) => hit.kitchen.id),
+    );
 
     return infinityPagination(
-      hits.map((hit) => kitchenCard(hit.kitchen, hit.distanceKm, ctx)),
+      hits.map((hit) => kitchenCard(hit.kitchen, hit.distanceKm, viewer)),
       { page: query.page, limit: query.limit },
     );
   }
@@ -80,7 +86,7 @@ export class DiscoveryService {
     const kitchen = await orNotFound(
       this.discoveryRepository.findKitchenById(id),
     );
-    const distanceKm = this.distanceTo(kitchen, ctx);
+    const distanceKm = roundedDistanceKm(kitchen, ctx);
 
     if (
       !this.isOwner(kitchen, ctx) &&
@@ -93,7 +99,12 @@ export class DiscoveryService {
       kitchen.id,
     );
 
-    return kitchenDetail(kitchen, distanceKm, products, ctx);
+    return kitchenDetail(
+      kitchen,
+      distanceKm,
+      products,
+      await this.withFavorites(ctx, [kitchen.id]),
+    );
   }
 
   async product(
@@ -105,7 +116,7 @@ export class DiscoveryService {
     const { product, kitchen } = await orNotFound(
       this.discoveryRepository.findProductById(id),
     );
-    const distanceKm = this.distanceTo(kitchen, ctx);
+    const distanceKm = roundedDistanceKm(kitchen, ctx);
     const visible =
       isKitchenReachable(kitchen, distanceKm, ctx.pickupRadiusKm) &&
       isProductListed(product);
@@ -114,15 +125,26 @@ export class DiscoveryService {
       throw notFound();
     }
 
-    return productDetail(product, kitchen, distanceKm, ctx);
+    return productDetail(
+      product,
+      kitchen,
+      distanceKm,
+      await this.withFavorites(ctx, [kitchen.id]),
+    );
   }
 
-  /** Measured to the rounded point, so probing cannot recover the exact one. */
-  private distanceTo(kitchen: Kitchen, ctx: ViewerContext): number {
-    return haversineKm(ctx.point, {
-      latitude: roundCoord(kitchen.latitude, ctx.coordPrecision),
-      longitude: roundCoord(kitchen.longitude, ctx.coordPrecision),
-    });
+  /** The heart on kitchen cards: which of these the viewer favorited. */
+  private async withFavorites(
+    ctx: ViewerContext,
+    kitchenIds: Kitchen['id'][],
+  ): Promise<ViewerContext> {
+    return {
+      ...ctx,
+      favoriteKitchenIds: await this.favoritesService.favoriteKitchenIds(
+        ctx.userId,
+        kitchenIds,
+      ),
+    };
   }
 
   private isOwner(kitchen: Kitchen, ctx: ViewerContext): boolean {
@@ -148,6 +170,7 @@ export class DiscoveryService {
         { infer: true },
       ),
       now: new Date(),
+      favoriteKitchenIds: new Set(),
     };
   }
 

@@ -32,6 +32,16 @@ export class KitchenSummary {
     description: 'Kapalıysa bir sonraki açılış',
   })
   opensAt: Date | null;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'Tek ondalık; ratingCount 0 iken null ("Yeni")',
+  })
+  ratingAvg: number | null;
+
+  @ApiProperty({ type: Number })
+  ratingCount: number;
 }
 
 export class KitchenCard extends KitchenSummary {
@@ -68,6 +78,9 @@ export class KitchenCard extends KitchenSummary {
 
   @ApiProperty({ type: Boolean })
   isVerified: boolean;
+
+  @ApiProperty({ type: Boolean, description: 'Kullanıcının favorisinde' })
+  isFavorite: boolean;
 }
 
 export class ProductCard {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { FavoritesModule } from '../favorites/favorites.module';
 import { KitchenEntity } from '../kitchens/infrastructure/persistence/relational/entities/kitchen.entity';
 import { ProductEntity } from '../products/infrastructure/persistence/relational/entities/product.entity';
 import { UsersModule } from '../users/users.module';
@@ -11,6 +12,7 @@ import { DiscoveryService } from './discovery.service';
   imports: [
     TypeOrmModule.forFeature([KitchenEntity, ProductEntity]),
     UsersModule,
+    FavoritesModule,
   ],
   controllers: [DiscoveryController],
   providers: [DiscoveryService, DiscoveryRepository],

@@ -9,6 +9,7 @@ import {
   kitchenDetail,
   productCard,
   productDetail,
+  roundedDistanceKm,
 } from './presenters';
 
 const NOW = new Date('2026-10-12T09:30:00Z');
@@ -20,6 +21,7 @@ const ctx: ViewerContext = {
   pickupRadiusKm: 5,
   coordPrecision: 3,
   now: NOW,
+  favoriteKitchenIds: new Set(['k1']),
 };
 
 const kitchen = Object.assign(new Kitchen(), {
@@ -45,6 +47,8 @@ const kitchen = Object.assign(new Kitchen(), {
   hours: [{ dayOfWeek: 1, opensAt: '11:00', closesAt: '20:00' }],
   isPaused: false,
   isVerified: false,
+  ratingAvg: 4.8,
+  ratingCount: 12,
 });
 
 const MAIN = Object.assign(new Category(), {
@@ -102,6 +106,18 @@ describe('kitchenCard', () => {
     });
   });
 
+  it('should carry the rating and the viewer’s heart', () => {
+    expect(kitchenCard(kitchen, 1, ctx)).toMatchObject({
+      ratingAvg: 4.8,
+      ratingCount: 12,
+      isFavorite: true,
+    });
+    expect(
+      kitchenCard(kitchen, 1, { ...ctx, favoriteKitchenIds: new Set() })
+        .isFavorite,
+    ).toBe(false);
+  });
+
   it('should not leak the exact address', () => {
     const card = kitchenCard(kitchen, 1, ctx);
     expect(card).not.toHaveProperty('fullAddress');
@@ -114,7 +130,13 @@ describe('productCard', () => {
     expect(productCard(product(), kitchen, 1, ctx)).toMatchObject({
       photo: { id: 'f2' },
       allergenWarnings: [Allergen.milk],
-      kitchen: { id: 'k1', distanceKm: 1, isOpenNow: true },
+      kitchen: {
+        id: 'k1',
+        distanceKm: 1,
+        isOpenNow: true,
+        ratingAvg: 4.8,
+        ratingCount: 12,
+      },
     });
   });
 
@@ -151,5 +173,16 @@ describe('productDetail', () => {
     expect(detail.photos.map((p) => p.id)).toEqual(['f2', 'f1']);
     expect(detail.description).toBe('Yoğurtlu');
     expect(detail.kitchen).toMatchObject({ id: 'k1', deliveryFeeKurus: 0 });
+  });
+});
+
+describe('roundedDistanceKm', () => {
+  it('should measure to the rounded kitchen point', () => {
+    const exact = roundedDistanceKm(
+      { latitude: 40.98771, longitude: 29.02249 },
+      { point: { latitude: 40.988, longitude: 29.022 }, coordPrecision: 3 },
+    );
+
+    expect(exact).toBe(0);
   });
 });
