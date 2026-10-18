@@ -7,6 +7,18 @@ export abstract class PaymentRepository {
 
   abstract update(
     id: Payment['id'],
-    payload: Partial<Pick<Payment, 'status' | 'refundedAt'>>,
+    payload: Partial<Pick<Payment, 'status' | 'refundedAt' | 'refundedKurus'>>,
   ): Promise<void>;
+
+  /**
+   * One transaction with the payment row locked: null unless the payment is
+   * `paid` and `refundedKurus + amountKurus` stays within what was paid;
+   * otherwise `refund` runs (its error rolls everything back) and
+   * `refundedKurus` grows — reaching the full amount makes it `refunded`.
+   */
+  abstract refundPartial(
+    orderId: string,
+    amountKurus: number,
+    refund: (payment: Payment) => Promise<void>,
+  ): Promise<NullableType<Payment>>;
 }

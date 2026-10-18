@@ -53,8 +53,11 @@ import { ReviewsModule } from './reviews/reviews.module';
 
 import { FavoritesModule } from './favorites/favorites.module';
 
+import { OrderIssuesModule } from './order-issues/order-issues.module';
+
 @Module({
   imports: [
+    OrderIssuesModule,
     FavoritesModule,
     ReviewsModule,
     PaymentsModule,

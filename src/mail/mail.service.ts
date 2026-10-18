@@ -166,4 +166,50 @@ export class MailService {
       },
     });
   }
+
+  /** A new issue report, to the support inbox (SUPPORT_EMAIL). */
+  async issueReported(
+    mailData: MailData<{
+      issueId: string;
+      orderCode: string;
+      category: string;
+      requestedResolution: string;
+      description: string;
+    }>,
+  ): Promise<void> {
+    const { issueId, orderCode, category, requestedResolution, description } =
+      mailData.data;
+    const title = `Sorun bildirimi · ${orderCode}`;
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: title,
+      text: [
+        `Sipariş: ${orderCode}`,
+        `Kategori: ${category}`,
+        `İstenen çözüm: ${requestedResolution}`,
+        `Kayıt: ${issueId}`,
+        '',
+        description,
+      ].join('\n'),
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', {
+          infer: true,
+        }),
+        'src',
+        'mail',
+        'mail-templates',
+        'issue-reported.hbs',
+      ),
+      context: {
+        title,
+        app_name: this.configService.get('app.name', { infer: true }),
+        issueId,
+        orderCode,
+        category,
+        requestedResolution,
+        description,
+      },
+    });
+  }
 }
