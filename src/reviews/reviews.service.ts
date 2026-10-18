@@ -164,13 +164,13 @@ export class ReviewsService {
   ): Promise<KitchenReviewView> {
     const review = await this.mine(ownerId, id);
     return kitchenReviewView(
-      await this.reviewRepository.setReply(review.id, reply),
+      await orNotFound(this.reviewRepository.setReply(review.id, reply)),
     );
   }
 
   async removeReply(ownerId: User['id'], id: Review['id']): Promise<void> {
     const review = await this.mine(ownerId, id);
-    await this.reviewRepository.setReply(review.id, null);
+    await orNotFound(this.reviewRepository.setReply(review.id, null));
   }
 
   /** The review stays visible; an admin decides. Twice → 409 reviewAlreadyReported. */
@@ -214,7 +214,7 @@ export class ReviewsService {
   ): Promise<KitchenReviewView> {
     const review = await orNotFound(this.reviewRepository.findById(id));
     return kitchenReviewView(
-      await this.reviewRepository.setHidden(review.id, isHidden),
+      await orNotFound(this.reviewRepository.setHidden(review.id, isHidden)),
     );
   }
 

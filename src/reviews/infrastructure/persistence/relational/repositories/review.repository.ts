@@ -200,25 +200,35 @@ export class ReviewRelationalRepository implements ReviewRepository {
     });
   }
 
-  async setHidden(id: Review['id'], isHidden: boolean): Promise<Review> {
-    await this.reviews.manager.transaction(async (manager) => {
-      const review = await manager.findOneOrFail(ReviewEntity, {
-        where: { id },
-      });
+  async setHidden(
+    id: Review['id'],
+    isHidden: boolean,
+  ): Promise<NullableType<Review>> {
+    const found = await this.reviews.manager.transaction(async (manager) => {
+      const review = await manager.findOne(ReviewEntity, { where: { id } });
+
+      if (!review) {
+        return false;
+      }
+
       await this.lockKitchen(manager, review.kitchenId);
       await manager.update(ReviewEntity, { id }, { isHidden });
       await this.recompute(manager, review.kitchenId);
+      return true;
     });
 
-    return this.findOneOrFail(id);
+    return found ? this.findOneWhere({ id }) : null;
   }
 
-  async setReply(id: Review['id'], reply: string | null): Promise<Review> {
+  async setReply(
+    id: Review['id'],
+    reply: string | null,
+  ): Promise<NullableType<Review>> {
     await this.reviews.update(
       { id },
       { reply, repliedAt: reply === null ? null : new Date() },
     );
-    return this.findOneOrFail(id);
+    return this.findOneWhere({ id });
   }
 
   async addReport(report: NewReviewReport): Promise<void> {

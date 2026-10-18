@@ -323,6 +323,7 @@ describe('Reviews', () => {
 
       expect(await storedRating()).toEqual({ ratingAvg: 5, ratingCount: 1 });
 
+      // Smoke check only; the stale-payload guard is unit-tested in kitchen.repository.spec.ts.
       await patch('/kitchens/me', cook)
         .send({ description: 'Ev yemekleri, taze ve sıcak' })
         .expect(200);

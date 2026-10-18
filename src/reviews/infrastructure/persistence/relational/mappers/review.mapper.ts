@@ -4,7 +4,7 @@ import { NewReview, Review } from '../../../../domain/review';
 import { ReviewEntity } from '../entities/review.entity';
 
 export class ReviewMapper {
-  /** Expects `author` joined (withDeleted) — ReviewRelationalRepository always does. */
+  /** Expects `author` joined (a soft-deleted user still loads through the relation) — ReviewRelationalRepository always joins it. */
   static toDomain(raw: ReviewEntity): Review {
     return Object.assign(new Review(), {
       id: raw.id,

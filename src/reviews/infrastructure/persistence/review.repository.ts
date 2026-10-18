@@ -66,11 +66,17 @@ export abstract class ReviewRepository {
   /** Soft delete + rating recompute. */
   abstract softDelete(id: Review['id']): Promise<void>;
 
-  /** + rating recompute; returns the updated review. */
-  abstract setHidden(id: Review['id'], isHidden: boolean): Promise<Review>;
+  /** + rating recompute; the updated review, null when it is gone (deleted meanwhile). */
+  abstract setHidden(
+    id: Review['id'],
+    isHidden: boolean,
+  ): Promise<NullableType<Review>>;
 
-  /** null clears the reply. */
-  abstract setReply(id: Review['id'], reply: string | null): Promise<Review>;
+  /** null clears the reply; returns null when the review is gone. */
+  abstract setReply(
+    id: Review['id'],
+    reply: string | null,
+  ): Promise<NullableType<Review>>;
 
   /** DuplicateReviewReportError on a second report by the same cook. */
   abstract addReport(report: NewReviewReport): Promise<void>;
