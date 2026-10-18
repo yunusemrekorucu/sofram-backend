@@ -42,8 +42,14 @@ import { KitchensModule } from './kitchens/kitchens.module';
 import { ProductsModule } from './products/products.module';
 import { DiscoveryModule } from './discovery/discovery.module';
 
+import { OrdersModule } from './orders/orders.module';
+
+import { PaymentsModule } from './payments/payments.module';
+
 @Module({
   imports: [
+    PaymentsModule,
+    OrdersModule,
     DiscoveryModule,
     ProductsModule,
     KitchensModule,
